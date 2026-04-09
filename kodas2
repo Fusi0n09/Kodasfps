@@ -1,0 +1,1181 @@
+--[[
+    Kodasfps - Premium FPS Cheat Hub
+    Black + White Cyberpunk Theme
+    Executor-ready Luau ScreenGui Script
+]]
+
+local pcallSuccess, pcallError = pcall(function()
+    -- Services
+    local Players = game:GetService("Players")
+    local TweenService = game:GetService("TweenService")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local CoreGui = game:GetService("CoreGui")
+
+    local LocalPlayer = Players.LocalPlayer
+
+    -- ============================================================
+    -- ESP LOGIC
+    -- ============================================================
+    local function initESP()
+        local safe_cloneref = cloneref or function(o) return o end
+        local Workspace = safe_cloneref(game:GetService("Workspace"))
+        local Cam = Workspace.CurrentCamera
+        
+        local ESP = {
+            Enabled = true,
+            TeamCheck = true,
+            MaxDistance = 2000,
+            FontSize = 11,
+            FadeOut = { OnDistance = true, OnDeath = false, OnLeave = false },
+            Drawing = {
+                Chams = {
+                    Enabled  = false, Thermal = true, FillRGB = Color3.fromRGB(0, 0, 0), Fill_Transparency = 100, OutlineRGB = Color3.fromRGB(255, 255, 255), Outline_Transparency = 100, VisibleCheck = true,
+                },
+                Names = { Enabled = true, RGB = Color3.fromRGB(0, 0, 0) },
+                Distances = { Enabled = true, Position = "Text", RGB = Color3.fromRGB(0, 0, 0) },
+                Weapons = {
+                    Enabled = false, WeaponTextRGB = Color3.fromRGB(0, 0, 0), Outlined = false, Gradient = false, GradientRGB1 = Color3.fromRGB(0, 0, 0), GradientRGB2 = Color3.fromRGB(50, 50, 50),
+                },
+                Healthbar = {
+                    Enabled = true, HealthText = true, Lerp = true, HealthTextRGB = Color3.fromRGB(255, 255, 255), Width = 2.5, Gradient = true, GradientRGB1 = Color3.fromRGB(0, 255, 0), GradientRGB2 = Color3.fromRGB(255, 255, 0), GradientRGB3 = Color3.fromRGB(255, 0, 0), 
+                },
+                Boxes = {
+                    Animate = true, RotationSpeed = 300, Gradient = false, GradientRGB1 = Color3.fromRGB(0, 0, 0), GradientRGB2 = Color3.fromRGB(50, 50, 50), GradientFill = true, GradientFillRGB1 = Color3.fromRGB(0, 0, 0), GradientFillRGB2 = Color3.fromRGB(50, 50, 50), 
+                    Filled = { Enabled = true, Transparency = 0.75, RGB = Color3.fromRGB(0, 0, 0) },
+                    Full = { Enabled = true, RGB = Color3.fromRGB(0, 0, 0) },
+                };
+            };
+        }
+
+        local RotationAngle, Tick = -45, tick()
+
+        local Functions = {}
+        function Functions:Create(Class, Properties)
+            local _Instance = typeof(Class) == 'string' and Instance.new(Class) or Class
+            for Property, Value in pairs(Properties) do _Instance[Property] = Value end
+            return _Instance
+        end
+
+        local EspGui = Functions:Create("ScreenGui", { Parent = CoreGui, Name = "Kodasfps_ESP" })
+
+        local function CreateESP(plr)
+            if EspGui:FindFirstChild(plr.Name) then EspGui[plr.Name]:Destroy() end
+            
+            local Name = Functions:Create("TextLabel", {Parent = EspGui, Position = UDim2.new(0.5, 0, 0, -11), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.Code, TextSize = ESP.FontSize, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(255, 255, 255), RichText = true})
+            local Weapon = Functions:Create("TextLabel", {Parent = EspGui, Position = UDim2.new(0.5, 0, 0, 31), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.Code, TextSize = ESP.FontSize, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(255, 255, 255), RichText = true})
+            local Box = Functions:Create("Frame", {Parent = EspGui, BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0})
+            local Gradient1 = Functions:Create("UIGradient", {Parent = Box, Enabled = ESP.Drawing.Boxes.GradientFill, Color = ColorSequence.new{ColorSequenceKeypoint.new(0, ESP.Drawing.Boxes.GradientFillRGB1), ColorSequenceKeypoint.new(1, ESP.Drawing.Boxes.GradientFillRGB2)}})
+            local Outline = Functions:Create("UIStroke", {Parent = Box, Enabled = ESP.Drawing.Boxes.Gradient, Transparency = 0, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Miter})
+            local Gradient2 = Functions:Create("UIGradient", {Parent = Outline, Enabled = ESP.Drawing.Boxes.Gradient, Color = ColorSequence.new{ColorSequenceKeypoint.new(0, ESP.Drawing.Boxes.GradientRGB1), ColorSequenceKeypoint.new(1, ESP.Drawing.Boxes.GradientRGB2)}})
+            local Healthbar = Functions:Create("Frame", {Parent = EspGui, BackgroundColor3 = Color3.fromRGB(0, 255, 0), BackgroundTransparency = 0})
+            local BehindHealthbar = Functions:Create("Frame", {Parent = EspGui, ZIndex = -1, BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 0})
+            Functions:Create("UIGradient", {Parent = Healthbar, Enabled = ESP.Drawing.Healthbar.Gradient, Rotation = -90, Color = ColorSequence.new{ColorSequenceKeypoint.new(0, ESP.Drawing.Healthbar.GradientRGB1), ColorSequenceKeypoint.new(0.5, ESP.Drawing.Healthbar.GradientRGB2), ColorSequenceKeypoint.new(1, ESP.Drawing.Healthbar.GradientRGB3)}})
+            local HealthText = Functions:Create("TextLabel", {Parent = EspGui, Position = UDim2.new(0.5, 0, 0, 31), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.Code, TextSize = ESP.FontSize, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(255, 255, 255)})
+            local Chams = Functions:Create("Highlight", {Parent = EspGui, FillTransparency = 1, OutlineTransparency = 0, OutlineColor = Color3.fromRGB(0, 0, 0), DepthMode = "AlwaysOnTop"})
+            
+            local function HideESP()
+                Box.Visible = false
+                Name.Visible = false
+                Weapon.Visible = false
+                Healthbar.Visible = false
+                BehindHealthbar.Visible = false
+                HealthText.Visible = false
+                Chams.Enabled = false
+            end
+            
+            local Connection
+            Connection = RunService.RenderStepped:Connect(function()
+                if not plr or not plr.Parent then
+                    HideESP()
+                    if Connection then Connection:Disconnect() end
+                    return
+                end
+                
+                if ESP.Enabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
+                    local HRP = plr.Character.HumanoidRootPart
+                    local Humanoid = plr.Character.Humanoid
+                    local Pos, OnScreen = Cam:WorldToScreenPoint(HRP.Position)
+                    local Dist = (Cam.CFrame.Position - HRP.Position).Magnitude / 3.5714285714
+                    
+                    if OnScreen and Dist <= ESP.MaxDistance and (not ESP.TeamCheck or plr.Team ~= LocalPlayer.Team) then
+                        local Size = HRP.Size.Y
+                        local scaleFactor = (Size * Cam.ViewportSize.Y) / (Pos.Z * 2)
+                        local w, h = 3 * scaleFactor, 4.5 * scaleFactor
+
+                        Chams.Adornee = plr.Character
+                        Chams.Enabled = ESP.Drawing.Chams.Enabled
+                        Chams.FillColor = ESP.Drawing.Chams.FillRGB
+                        Chams.OutlineColor = ESP.Drawing.Chams.OutlineRGB
+                        if ESP.Drawing.Chams.Thermal then
+                            local breathe_effect = math.atan(math.sin(tick() * 2)) * 2 / math.pi
+                            Chams.FillTransparency = ESP.Drawing.Chams.Fill_Transparency * breathe_effect * 0.01
+                            Chams.OutlineTransparency = ESP.Drawing.Chams.Outline_Transparency * breathe_effect * 0.01
+                        end
+                        Chams.DepthMode = ESP.Drawing.Chams.VisibleCheck and "Occluded" or "AlwaysOnTop"
+
+                        Box.Visible = ESP.Drawing.Boxes.Full.Enabled
+                        Box.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y - h / 2)
+                        Box.Size = UDim2.new(0, w, 0, h)
+                        if ESP.Drawing.Boxes.Filled.Enabled then
+                            Box.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                            Box.BackgroundTransparency = ESP.Drawing.Boxes.GradientFill and ESP.Drawing.Boxes.Filled.Transparency or 1
+                            Box.BorderSizePixel = 1
+                        else
+                            Box.BackgroundTransparency = 1
+                        end
+                        
+                        RotationAngle = RotationAngle + (tick() - Tick) * ESP.Drawing.Boxes.RotationSpeed * math.cos(math.pi / 4 * tick() - math.pi / 2)
+                        Gradient1.Rotation = ESP.Drawing.Boxes.Animate and RotationAngle or -45
+                        Gradient2.Rotation = ESP.Drawing.Boxes.Animate and RotationAngle or -45
+                        Tick = tick()
+
+                        local health = Humanoid.Health / Humanoid.MaxHealth
+                        Healthbar.Visible = ESP.Drawing.Healthbar.Enabled
+                        Healthbar.Position = UDim2.new(0, Pos.X - w / 2 - 6, 0, Pos.Y - h / 2 + h * (1 - health))  
+                        Healthbar.Size = UDim2.new(0, ESP.Drawing.Healthbar.Width, 0, h * health)  
+                        BehindHealthbar.Visible = ESP.Drawing.Healthbar.Enabled
+                        BehindHealthbar.Position = UDim2.new(0, Pos.X - w / 2 - 6, 0, Pos.Y - h / 2)  
+                        BehindHealthbar.Size = UDim2.new(0, ESP.Drawing.Healthbar.Width, 0, h)
+                        
+                        if ESP.Drawing.Healthbar.HealthText then
+                            local healthPercentage = math.floor(health * 100)
+                            HealthText.Position = UDim2.new(0, Pos.X - w / 2 - 6, 0, Pos.Y - h / 2 + h * (1 - healthPercentage / 100) + 3)
+                            HealthText.Text = tostring(healthPercentage)
+                            HealthText.Visible = Humanoid.Health < Humanoid.MaxHealth and ESP.Drawing.Healthbar.Enabled
+                            HealthText.TextColor3 = ESP.Drawing.Healthbar.Lerp and (health >= 0.75 and Color3.fromRGB(0, 255, 0) or health >= 0.5 and Color3.fromRGB(255, 255, 0) or health >= 0.25 and Color3.fromRGB(255, 170, 0) or Color3.fromRGB(255, 0, 0)) or ESP.Drawing.Healthbar.HealthTextRGB
+                        else
+                            HealthText.Visible = false
+                        end
+
+                        Name.Visible = ESP.Drawing.Names.Enabled
+                        Name.Text = string.format('(<font color="rgb(%d, %d, %d)">E</font>) %s', 0, 0, 0, plr.Name)
+                        Name.Position = UDim2.new(0, Pos.X, 0, Pos.Y - h / 2 - 9)
+                        
+                        if ESP.Drawing.Distances.Enabled then
+                            Weapon.Position = UDim2.new(0, Pos.X, 0, Pos.Y + h / 2 + 8)
+                            Name.Text = Name.Text .. string.format(" [%d]", math.floor(Dist))
+                        end
+
+                        Weapon.Text = "none"
+                        Weapon.Visible = ESP.Drawing.Weapons.Enabled
+                    else
+                        HideESP()
+                    end
+                else
+                    HideESP()
+                end
+            end)
+        end
+
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer then coroutine.wrap(CreateESP)(v) end      
+        end
+        Players.PlayerAdded:Connect(function(v)
+            coroutine.wrap(CreateESP)(v)
+        end)
+        
+        return ESP
+    end
+
+    local GlobalESP = initESP()
+
+    -- ============================================================
+    -- COMBAT / AIMBOT / TRIGGERBOT LOGIC
+    -- ============================================================
+    local function initCombat()
+        local Mouse = LocalPlayer:GetMouse()
+        local UserInputService = game:GetService("UserInputService")
+        local RunService = game:GetService("RunService")
+
+        -- Triggerbot
+        local TB = {
+            HoldClick = true,
+            Hotkey = Enum.KeyCode.T,
+            HotkeyToggle = true,
+            Toggle = false
+        }
+        local CurrentlyPressed = false
+        local lastClick = 0
+
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if gpe then return end
+            if TB.HotkeyToggle then
+                if input.KeyCode == TB.Hotkey then
+                    TB.Toggle = not TB.Toggle
+                end
+            else
+                if input.KeyCode == TB.Hotkey then
+                    TB.Toggle = true
+                end
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(input, gpe)
+            if not TB.HotkeyToggle and input.KeyCode == TB.Hotkey then
+                TB.Toggle = false
+            end
+        end)
+
+        local function getPlayerFromHit(hit)
+            if not hit then return nil end
+            local model = hit:FindFirstAncestorOfClass("Model")
+            if model and model:FindFirstChild("Humanoid") then
+                return Players:GetPlayerFromCharacter(model)
+            end
+            return nil
+        end
+
+        RunService.RenderStepped:Connect(function()
+            if TB.Toggle then
+                local hitPlayer = getPlayerFromHit(Mouse.Target)
+                
+                if hitPlayer and hitPlayer ~= LocalPlayer and hitPlayer.Character and hitPlayer.Character:FindFirstChild("Humanoid") and hitPlayer.Character.Humanoid.Health > 0 then
+                    if TB.HoldClick then
+                        if not CurrentlyPressed then
+                            CurrentlyPressed = true
+                            if type(mouse1press) == "function" then mouse1press() end
+                        end
+                    else
+                        if tick() - lastClick > 0.1 then
+                            lastClick = tick()
+                            if type(mouse1click) == "function" then mouse1click() end
+                        end
+                    end
+                else
+                    if TB.HoldClick and CurrentlyPressed then
+                        CurrentlyPressed = false
+                        if type(mouse1release) == "function" then mouse1release() end
+                    end
+                end
+            end
+        end)
+
+        -- Camlock
+        local cl_config = {
+            enabled = false,
+            key = Enum.KeyCode.Q,
+            part = "Head",
+            y_offset = -0.6,
+            fov = 120,
+            thick = 1,
+            idle_clr = Color3.fromRGB(255, 0, 0),
+            target_clr = Color3.fromRGB(0, 255, 0),
+            show_fov = true,
+            prediction = 0.115,
+            smoothing = 10
+        }
+
+        local cl_target = nil
+        local circle
+        if type(Drawing) == "table" and type(Drawing.new) == "function" then
+            circle = Drawing.new("Circle")
+            circle.Visible = false
+            circle.Filled = false
+            circle.Radius = cl_config.fov
+            circle.Thickness = cl_config.thick
+            circle.Color = cl_config.idle_clr
+        end
+
+        local function notify(title, msg)
+            if game.StarterGui then
+                pcall(function() game.StarterGui:SetCore("SendNotification", { Title = title, Text = msg, Duration = 2 }) end)
+            end
+        end
+
+        local function get_closest()
+            local dist = cl_config.fov
+            local temp_target = nil
+            local cam_size = Workspace.CurrentCamera.ViewportSize
+            local center = Vector2.new(cam_size.X / 2, cam_size.Y / 2)
+
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(cl_config.part) then
+                    local pos, vis = Workspace.CurrentCamera:WorldToViewportPoint(v.Character[cl_config.part].Position)
+                    if vis then
+                        local mag = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                        if mag < dist then
+                            dist = mag
+                            temp_target = v.Character[cl_config.part]
+                        end
+                    end
+                end
+            end
+            return temp_target
+        end
+
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if gpe then return end
+            if cl_config.enabled and input.KeyCode == cl_config.key then
+                if cl_target then
+                    cl_target = nil
+                    notify("Camlock", "Unlocked")
+                else
+                    local found = get_closest()
+                    if found then
+                        cl_target = found
+                        local name = Players:GetPlayerFromCharacter(cl_target.Parent).Name
+                        notify("Camlock", "Locked onto: " .. name)
+                    end
+                end
+            end
+        end)
+
+        RunService.RenderStepped:Connect(function()
+            if circle then
+                circle.Visible = cl_config.enabled and cl_config.show_fov
+                if circle.Visible then
+                    circle.Radius = cl_config.fov
+                    circle.Position = Vector2.new(Workspace.CurrentCamera.ViewportSize.X / 2, Workspace.CurrentCamera.ViewportSize.Y / 2)
+                    local check = get_closest()
+                    if check then circle.Color = cl_config.target_clr else circle.Color = cl_config.idle_clr end
+                end
+            end
+
+            if cl_config.enabled and cl_target and cl_target.Parent and cl_target.Parent:FindFirstChild("Humanoid") and cl_target.Parent.Humanoid.Health > 0 then
+                local lock_pos = cl_target.Position + Vector3.new(0, cl_config.y_offset, 0)
+                if cl_target.Parent:FindFirstChild("HumanoidRootPart") and tonumber(cl_config.prediction) then
+                    lock_pos = lock_pos + (cl_target.Parent.HumanoidRootPart.Velocity * tonumber(cl_config.prediction))
+                end
+                
+                local targetCFrame = CFrame.new(Workspace.CurrentCamera.CFrame.Position, lock_pos)
+                local s = tonumber(cl_config.smoothing) or 10
+                if s < 10 then
+                    Workspace.CurrentCamera.CFrame = Workspace.CurrentCamera.CFrame:Lerp(targetCFrame, s / 10)
+                else
+                    Workspace.CurrentCamera.CFrame = targetCFrame
+                end
+            else
+                cl_target = nil
+            end
+        end)
+
+        return TB, cl_config
+    end
+
+    local TriggerbotConfig, CamlockConfig = initCombat()
+
+    -- ============================================================
+    -- UNIVERSAL & YUU HOOD MOD LOGIC
+    -- ============================================================
+    local function initUniversalMods()
+        local Mods = {
+            WalkSpeed = 50, JumpPower = 100, SpeedHack = false, InfJump = false,
+            Fly = false, FlySpeed = 50, Noclip = false, Fullbright = false, FOV = 90, Wireframe = false,
+            AntiAfk = true, AutoFarm = false, NoRecoil = false, InstantReload = false, Wallbang = false
+        }
+        
+        local VirtualUser = game:GetService("VirtualUser")
+        local Lighting = game:GetService("Lighting")
+        local RunService = game:GetService("RunService")
+        local Workspace = game:GetService("Workspace")
+        local UserInputService = game:GetService("UserInputService")
+        
+        -- Default Lighting Cache
+        local defaultAmbient, defaultBottom, defaultTop = Lighting.Ambient, Lighting.ColorShift_Bottom, Lighting.ColorShift_Top
+
+        -- Infinite Jump + Anti-AFK
+        UserInputService.JumpRequest:Connect(function()
+            if Mods.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+
+        LocalPlayer.Idled:Connect(function()
+            if Mods.AntiAfk then
+                VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+                task.wait(1)
+                VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+            end
+        end)
+
+        local bg, bv
+        local function toggleFly(v)
+            Mods.Fly = v
+            if v and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local root = LocalPlayer.Character.HumanoidRootPart
+                bg = Instance.new("BodyGyro", root)
+                bg.P = 9e4; bg.maxTorque = Vector3.new(9e9, 9e9, 9e9); bg.cframe = root.CFrame
+                bv = Instance.new("BodyVelocity", root)
+                bv.velocity = Vector3.new(0, 0, 0); bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+            else
+                if bg then bg:Destroy() bg = nil end
+                if bv then bv:Destroy() bv = nil end
+            end
+        end
+
+        RunService.RenderStepped:Connect(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            
+            if Mods.Fullbright then
+                Lighting.Ambient = Color3.new(1, 1, 1)
+                Lighting.ColorShift_Bottom = Color3.new(1, 1, 1)
+                Lighting.ColorShift_Top = Color3.new(1, 1, 1)
+            else
+                Lighting.Ambient = defaultAmbient
+                Lighting.ColorShift_Bottom = defaultBottom
+                Lighting.ColorShift_Top = defaultTop
+            end
+            
+            Workspace.CurrentCamera.FieldOfView = Mods.FOV
+            
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if Mods.SpeedHack and hum then
+                hum.WalkSpeed = Mods.WalkSpeed
+                hum.JumpPower = Mods.JumpPower
+                if not hum.UseJumpPower then hum.UseJumpPower = true end
+            end
+            
+            if Mods.Noclip then
+                for _, p in pairs(char:GetDescendants()) do
+                    if p:IsA("BasePart") then p.CanCollide = false end
+                end
+            end
+            
+            if Mods.Fly and char:FindFirstChild("HumanoidRootPart") and bg and bv then
+                local cam = Workspace.CurrentCamera
+                local speed = tonumber(Mods.FlySpeed) or 50
+                local ctrl = {f = 0, b = 0, l = 0, r = 0}
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then ctrl.f = 1 end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then ctrl.b = -1 end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then ctrl.l = -1 end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then ctrl.r = 1 end
+                
+                local dir = cam.CFrame.lookVector * (ctrl.f + ctrl.b) + cam.CFrame.rightVector * (ctrl.r + ctrl.l)
+                if dir.Magnitude > 0 then dir = dir.Unit end
+                bv.Velocity = dir * speed
+                bg.CFrame = cam.CFrame
+            end
+        end)
+        
+        -- Da Hood / Yuu Hood Gun Exploits via GC hooks
+        task.spawn(function()
+            while task.wait(1) do
+                if Mods.NoRecoil or Mods.InstantReload or Mods.Wallbang then
+                    if type(getgc) == "function" then
+                        for _, v in pairs(getgc(true)) do
+                            if type(v) == "table" then
+                                if Mods.NoRecoil and rawget(v, "Recoil") ~= nil then v.Recoil = 0 end
+                                if Mods.NoRecoil and rawget(v, "RecoilMax") ~= nil then v.RecoilMax = 0 end
+                                if Mods.NoRecoil and rawget(v, "RecoilMin") ~= nil then v.RecoilMin = 0 end
+                                
+                                if Mods.InstantReload and rawget(v, "ReloadTime") ~= nil then v.ReloadTime = 0.05 end
+                                
+                                if Mods.Wallbang and rawget(v, "Penetration") ~= nil then v.Penetration = 100 end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+
+        -- Da Hood / Yuu Hood specific AutoFarm (Money Drops)
+        task.spawn(function()
+            while task.wait(0.2) do
+                if Mods.AutoFarm and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local root = LocalPlayer.Character.HumanoidRootPart
+                    local dropFolder = Workspace:FindFirstChild("Ignored") and Workspace.Ignored:FindFirstChild("Drop")
+                    if dropFolder then
+                        for _, v in pairs(dropFolder:GetChildren()) do
+                            if v.Name == "MoneyDrop" and v:IsA("Part") then
+                                local cd = v:FindFirstChild("ClickDetector")
+                                if cd then
+                                    root.CFrame = v.CFrame
+                                    if type(fireclickdetector) == "function" then
+                                        fireclickdetector(cd)
+                                    end
+                                    task.wait(0.3)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+
+        Mods.ToggleFly = toggleFly
+        return Mods
+    end
+
+    local UniMods = initUniversalMods()
+
+    -- ============================================================
+    -- SILENT AIM (MULTI-GAME) BACKEND
+    -- ============================================================
+
+    -- Auto-detect game by PlaceId
+    local GAME_IDS = {
+        [100447459001944] = "Da Uphill",
+        [77250653506933]  = "Da Strike",
+        [2788229376]      = "Da Hood",
+        [7213786345]      = "Da Hood",
+        [9872300030]      = "Yuu Hood",
+    }
+    local DetectedGame = GAME_IDS[game.PlaceId] or "Da Hood"
+
+    local SilentAimConfig = {
+        Enabled       = false,
+        HitChance     = 90,
+        FOVRadius     = 35,
+        ShowFOV       = true,
+        WallCheck     = true,
+        KnockedCheck  = true,
+        AntiCurve     = true,
+        NoGroundShots = true,
+        Mode          = "custom",
+        Prediction    = 0.12,
+        AutoPrediction= false,
+        HitPart       = "HumanoidRootPart",
+        NearestPoint  = true,
+        Radient       = true,
+        DrawFOVSides  = 64,
+        GameMode      = DetectedGame,
+    }
+
+    local function initSilentAim()
+        local SAPlayers     = game:GetService("Players")
+        local SARunService  = game:GetService("RunService")
+        local SACamera      = workspace.CurrentCamera
+        local SALocalPlayer = SAPlayers.LocalPlayer
+        local SAMouse       = SALocalPlayer:GetMouse()
+        local SAGuiInset    = game:GetService("GuiService"):GetGuiInset()
+
+        _G.SilentTarget = nil
+
+        -- FOV Drawing Circle
+        if _G.SilentFOVCircle and _G.SilentFOVCircle.Remove then _G.SilentFOVCircle:Remove() end
+        if type(Drawing) == "table" and type(Drawing.new) == "function" then
+            _G.SilentFOVCircle = Drawing.new("Circle")
+            _G.SilentFOVCircle.Color = Color3.new(1, 1, 1)
+            _G.SilentFOVCircle.Thickness = 1
+            _G.SilentFOVCircle.Filled = false
+            _G.SilentFOVCircle.Transparency = 1
+            _G.SilentFOVCircle.Visible = false
+        end
+
+        local function isPlayerValid(p)
+            return p and p.Character
+                and p.Character:FindFirstChild("HumanoidRootPart")
+                and p.Character:FindFirstChild("Humanoid")
+                and p.Character:FindFirstChild("Head")
+        end
+
+        local function calculateHitChance(pct)
+            return (math.random(0, 100) / 100) <= (math.floor(pct) / 100)
+        end
+
+        local function wallCheck(targetPart, targetChar)
+            local origin = SACamera.CFrame.Position
+            local _, onScreen = SACamera:WorldToViewportPoint(targetPart.Position)
+            if onScreen then
+                local rp = RaycastParams.new()
+                rp.FilterType = Enum.RaycastFilterType.Blacklist
+                rp.FilterDescendantsInstances = {SALocalPlayer.Character or {}, SACamera}
+                local result = workspace:Raycast(origin, targetPart.Position - origin, rp)
+                if result then
+                    return not result.Instance or result.Instance:IsDescendantOf(targetChar)
+                end
+            end
+            return false
+        end
+
+        local function getClosestBodyPart(char)
+            local closest, part = math.huge, nil
+            for _, p in pairs(char:GetChildren()) do
+                if p:IsA("BasePart") and not string.find(p.Name:lower(), "gun") then
+                    local pos, onScreen = SACamera:WorldToScreenPoint(p.Position)
+                    if onScreen then
+                        local d = (Vector2.new(SAMouse.X, SAMouse.Y) - Vector2.new(pos.X, pos.Y)).Magnitude
+                        if d < closest then closest = d; part = p end
+                    end
+                end
+            end
+            return part
+        end
+
+        local function getNearestPoint(part)
+            if not part then return nil end
+            local half      = part.Size * 0.5
+            local transform = part.CFrame:PointToObjectSpace(SAMouse.Hit.Position)
+            return part.CFrame * Vector3.new(
+                math.clamp(transform.X, -half.X, half.X),
+                math.clamp(transform.Y, -half.Y, half.Y),
+                math.clamp(transform.Z, -half.Z, half.Z)
+            )
+        end
+
+        local function getClosestTarget()
+            if not calculateHitChance(SilentAimConfig.HitChance) then return nil end
+            local target, closestDist = nil, math.huge
+            for _, p in pairs(SAPlayers:GetPlayers()) do
+                if p ~= SALocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = p.Character.HumanoidRootPart
+                    local pos, onScreen = SACamera:WorldToScreenPoint(hrp.Position)
+                    if onScreen then
+                        local d = (Vector2.new(SAMouse.X, SAMouse.Y) - Vector2.new(pos.X, pos.Y)).Magnitude * 0.6
+                        -- Knocked check
+                        if SilentAimConfig.KnockedCheck and isPlayerValid(p) then
+                            local be = p.Character:FindFirstChild("BodyEffects")
+                            local grabbed = p.Character:FindFirstChild("GRABBING_CONSTRAINT")
+                            if be then
+                                local ko = be:FindFirstChild("K.O")
+                                if (ko and ko.Value) or grabbed then continue end
+                            end
+                        end
+                        -- Wall check
+                        if SilentAimConfig.WallCheck and isPlayerValid(p) then
+                            local tp = p.Character:FindFirstChild(SilentAimConfig.HitPart)
+                            if tp and not wallCheck(tp, p.Character) then continue end
+                        end
+                        -- Health check (skip near-dead)
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        if hum and hum.Health < 4 then continue end
+
+                        if d < closestDist and d < SilentAimConfig.FOVRadius * 3 then
+                            closestDist = d
+                            target = p
+                        end
+                    end
+                end
+            end
+            return target
+        end
+
+        local function getPredictedPosition()
+            local tgt = _G.SilentTarget
+            if not isPlayerValid(tgt) then return nil end
+            local targetChar = tgt.Character
+            local hrp        = targetChar.HumanoidRootPart
+            local hum        = targetChar:FindFirstChildOfClass("Humanoid")
+            if not hrp or not hum then return nil end
+
+            local targetVel = hrp.Velocity
+            local targetMov = hum.MoveDirection
+            local baseCF
+
+            if SilentAimConfig.NearestPoint then
+                local hitPartName = SilentAimConfig.HitPart
+                local hp = hitPartName == "Head" or hitPartName == "UpperTorso" or hitPartName == "LowerTorso"
+                if hp then
+                    local closest = getClosestBodyPart(targetChar)
+                    if closest then hitPartName = closest.Name end
+                end
+                local tp = targetChar:FindFirstChild(hitPartName) or targetChar:FindFirstChild("HumanoidRootPart")
+                if tp then
+                    local np = getNearestPoint(tp)
+                    baseCF = np or tp.Position
+                end
+            else
+                local tp = targetChar:FindFirstChild(SilentAimConfig.HitPart)
+                if tp then baseCF = tp.Position end
+            end
+
+            if not baseCF then return nil end
+
+            -- AntiCurve / NoGroundShots logic
+            local antiCurve = SilentAimConfig.AntiCurve and
+                (targetVel.Magnitude > 86 or (targetVel.Magnitude < 1 and targetMov.Magnitude > 0.01)
+                    or (targetVel.Magnitude > 5 and targetMov.Magnitude < 0.01))
+
+            local noGround = SilentAimConfig.NoGroundShots and targetVel.Y < -20
+
+            local pred = SilentAimConfig.Prediction
+            if antiCurve then
+                return baseCF + (targetMov * pred * 16)
+            elseif noGround then
+                return baseCF + (Vector3.new(targetVel.X, 0, targetVel.Z) * pred)
+            else
+                return baseCF + (targetVel * pred)
+            end
+        end
+
+        local function applySilentAim()
+            if not SilentAimConfig.Enabled then return end
+            _G.SilentTarget = getClosestTarget()
+            if not _G.SilentTarget or not _G.SilentTarget.Character then return end
+            local hrpPos = SACamera:WorldToScreenPoint(_G.SilentTarget.Character.HumanoidRootPart.Position)
+            local d = (Vector2.new(SAMouse.X, SAMouse.Y) - Vector2.new(hrpPos.X, hrpPos.Y)).Magnitude * 0.6
+            if d < SilentAimConfig.FOVRadius * 3 then
+                local predicted = getPredictedPosition()
+                if predicted then
+                    -- Fire the correct remote based on detected game
+                    local RS = game:GetService("ReplicatedStorage")
+                    local gm = SilentAimConfig.GameMode
+                    local predictedVec = Vector3.new(predicted.X, predicted.Y, predicted.Z)
+
+                    if gm == "Da Strike" then
+                        local remote = RS:FindFirstChild("MAINEVENT")
+                        if remote then remote:FireServer("MOUSE", predictedVec) end
+                    elseif gm == "Da Uphill" then
+                        local remote = RS:FindFirstChild("MAINEVENT")
+                        if remote then remote:FireServer("MOUSE", predictedVec) end
+                    elseif gm == "Yuu Hood" then
+                        local remote = RS:FindFirstChild("MAINEVENT") or RS:FindFirstChild("MainEvent")
+                        if remote then remote:FireServer("MOUSE", predictedVec) end
+                    elseif gm == "Da Hood" then
+                        local remote = RS:FindFirstChild("MainEvent") or RS:FindFirstChild("MAINEVENT")
+                        if remote then remote:FireServer("UpdateMousePos", predictedVec) end
+                    else
+                        -- Fallback: try MAINEVENT
+                        local remote = RS:FindFirstChild("MAINEVENT") or RS:FindFirstChild("MainEvent")
+                        if remote then remote:FireServer("MOUSE", predictedVec) end
+                    end
+                    -- Hit sound on successful redirect
+                    _G.KodaFPS_PlayHitSound = true
+                end
+            end
+        end
+
+        -- FOV circle update loop
+        if type(SARunService.Heartbeat) == "table" or type(SARunService.Heartbeat.Connect) == "function" then
+            SARunService.Heartbeat:Connect(function()
+                if _G.SilentFOVCircle then
+                    _G.SilentFOVCircle.Visible = SilentAimConfig.Enabled and SilentAimConfig.ShowFOV
+                    _G.SilentFOVCircle.Radius = (SilentAimConfig.FOVRadius or 35) * 3
+                    _G.SilentFOVCircle.Position = Vector2.new(SAMouse.X, SAMouse.Y + SAGuiInset.Y)
+                    _G.SilentFOVCircle.Filled = SilentAimConfig.Radient
+                    _G.SilentFOVCircle.Transparency = SilentAimConfig.Radient and 0.3 or 1
+                end
+            end)
+
+            -- Auto-prediction ping loop
+            SARunService.Heartbeat:Connect(function()
+                if not SilentAimConfig.AutoPrediction then return end
+                local ok, pingStr = pcall(function()
+                    return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()
+                end)
+                if not ok or not pingStr then return end
+                local split = string.split(pingStr, "(")
+                local ping  = tonumber(split and split[1])
+                if not ping then return end
+                local pingMap = {
+                    {190,0.180},{180,0.170},{170,0.165},{160,0.1574},{150,0.1555},
+                    {140,0.141},{130,0.1344},{120,0.1344},{110,0.1300},{100,0.1295},
+                    {90,0.1295},{80,0.1300},{70,0.1290},{60,0.1250},{50,0.1230},
+                    {40,0.1190},{30,0.1100},{20,0.1000}
+                }
+                for _, entry in ipairs(pingMap) do
+                    if ping < entry[1] then SilentAimConfig.Prediction = entry[2]; break end
+                end
+            end)
+        end
+
+        -- Hook Tool.Activated
+        local toolConn
+        local function onToolAdded(tool)
+            if tool:IsA("Tool") then
+                if toolConn then toolConn:Disconnect() end
+                toolConn = tool.Activated:Connect(applySilentAim)
+            end
+        end
+        local function onCharReady(char)
+            char.ChildAdded:Connect(onToolAdded)
+        end
+        if SALocalPlayer.Character then onCharReady(SALocalPlayer.Character) end
+        SALocalPlayer.CharacterAdded:Connect(onCharReady)
+    end
+
+    initSilentAim()
+
+    -- ============================================================
+    -- HIT SOUNDS BACKEND
+    -- ============================================================
+    local HitSounds = {
+        Enabled = false,
+        Current = "Bubble",
+        SoundIds = {
+            ["Call of Duty"] = 131961101,
+            ["Bubble"]       = 131961108,
+            ["Error"]        = 131961112,
+            ["Lazer"]        = 131961118,
+            ["Pop"]          = 131961122,
+        }
+    }
+
+    local function playHitSound()
+        if not HitSounds.Enabled then return end
+        local id = HitSounds.SoundIds[HitSounds.Current] or HitSounds.SoundIds["Bubble"]
+        local s = Instance.new("Sound")
+        s.SoundId = "rbxassetid://" .. tostring(id)
+        s.Volume = 1
+        s.Parent = workspace
+        s:Play()
+        game:GetService("Debris"):AddItem(s, 3)
+    end
+
+    -- Poll the flag set by Silent Aim on each redirect
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if _G.KodaFPS_PlayHitSound then
+            _G.KodaFPS_PlayHitSound = false
+            playHitSound()
+        end
+    end)
+
+    -- ============================================================
+    -- KODAFPS LINORIALIB UI (V3.1)
+    -- ============================================================
+    local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
+    local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/ThemeManager.lua"))()
+    local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/SaveManager.lua"))()
+
+    local Window = Library:CreateWindow({
+        Title = "Kodasfps  [" .. DetectedGame .. "]",
+        Center = true,
+        AutoShow = true,
+        TabPadding = 10,
+        MenuFadeTime = 0.2
+    })
+
+    -- Make the window wider so all tabs fit
+    if Library and Library.Main then
+        pcall(function()
+            Library.Main.Size = UDim2.new(0, 700, 0, 500)
+            Library.Main.Position = UDim2.new(0.5, -350, 0.5, -250)
+        end)
+    end
+
+    local Tabs = {
+        Main = Window:AddTab("Combat"),
+        SilentAim = Window:AddTab("Silent Aim"),
+        World = Window:AddTab("Visuals"),
+        Misc = Window:AddTab("Misc"),
+        ["Settings"] = Window:AddTab("Settings")
+    }
+
+    local player = game:GetService("Players").LocalPlayer
+    Library:Notify("Welcome to Kodasfps! UserID: " .. player.UserId)
+
+    -- === MAIN TAB (COMBAT & MOVEMENT) ===
+    
+    local combatBox = Tabs.Main:AddLeftGroupbox("Combat (Camlock & Triggerbot)")
+    
+    combatBox:AddToggle('cl_master', {
+        Text = 'Camlock Master',
+        Default = CamlockConfig.enabled,
+        Tooltip = 'Enable Camlock target tracking',
+        Callback = function(Value) CamlockConfig.enabled = Value end
+    })
+    combatBox:AddToggle('cl_circle', {
+        Text = 'Show FOV Circle',
+        Default = CamlockConfig.show_fov,
+        Callback = function(Value) CamlockConfig.show_fov = Value end
+    })
+    combatBox:AddSlider('cl_fov', {
+        Text = 'Camlock FOV',
+        Default = CamlockConfig.fov,
+        Min = 10, Max = 500, Rounding = 0,
+        Callback = function(Value) CamlockConfig.fov = Value end
+    })
+    combatBox:AddInput('cl_predict', {
+        Text = 'Prediction Factor',
+        Default = tostring(CamlockConfig.prediction),
+        Numeric = true,
+        Finished = true,
+        Callback = function(Value) CamlockConfig.prediction = tonumber(Value) or 0.115 end
+    })
+    combatBox:AddSlider('cl_smooth', {
+        Text = 'Smoothness',
+        Default = CamlockConfig.smoothing,
+        Min = 1, Max = 10, Rounding = 1,
+        Callback = function(Value) CamlockConfig.smoothing = Value end
+    })
+    
+    combatBox:AddDivider()
+
+    combatBox:AddToggle('tb_master', {
+        Text = 'Triggerbot Master',
+        Default = TriggerbotConfig.Toggle,
+        Callback = function(Value) TriggerbotConfig.Toggle = Value end
+    })
+    combatBox:AddToggle('tb_toggle', {
+        Text = 'Toggle Key Mode',
+        Default = TriggerbotConfig.HotkeyToggle,
+        Callback = function(Value) TriggerbotConfig.HotkeyToggle = Value end
+    })
+    combatBox:AddToggle('tb_hold', {
+        Text = 'Require Click Hold',
+        Default = TriggerbotConfig.HoldClick,
+        Callback = function(Value) TriggerbotConfig.HoldClick = Value end
+    })
+
+    local modsBox = Tabs.Main:AddRightGroupbox("Weapon Mods")
+    modsBox:AddToggle('wm_recoil', {
+        Text = 'No Recoil', Default = UniMods.NoRecoil,
+        Callback = function(Value) UniMods.NoRecoil = Value end
+    })
+    modsBox:AddToggle('wm_reload', {
+        Text = 'Instant Reload', Default = UniMods.InstantReload,
+        Callback = function(Value) UniMods.InstantReload = Value end
+    })
+    modsBox:AddToggle('wm_wallbang', {
+        Text = 'Wallbang (Penetration)', Default = UniMods.Wallbang,
+        Callback = function(Value) UniMods.Wallbang = Value end
+    })
+
+    local movementBox = Tabs.Main:AddRightGroupbox("Movement")
+    movementBox:AddToggle('mv_speedhack', {
+        Text = 'Speed Hack Master', Default = UniMods.SpeedHack,
+        Callback = function(Value) UniMods.SpeedHack = Value end
+    })
+    movementBox:AddSlider('mv_walkspeed', {
+        Text = 'WalkSpeed', Default = UniMods.WalkSpeed, Min = 16, Max = 250, Rounding = 0,
+        Callback = function(Value) UniMods.WalkSpeed = Value end
+    })
+    movementBox:AddToggle('mv_infjump', {
+        Text = 'Infinite Jump', Default = UniMods.InfJump,
+        Callback = function(Value) UniMods.InfJump = Value end
+    })
+    movementBox:AddSlider('mv_jumppower', {
+        Text = 'JumpPower', Default = UniMods.JumpPower, Min = 50, Max = 400, Rounding = 0,
+        Callback = function(Value) UniMods.JumpPower = Value end
+    })
+    movementBox:AddToggle('mv_fly', {
+        Text = 'Fly Enabled', Default = UniMods.Fly,
+        Callback = function(Value) UniMods.ToggleFly(Value) end
+    })
+    movementBox:AddSlider('mv_flyspeed', {
+        Text = 'Fly Speed', Default = UniMods.FlySpeed, Min = 10, Max = 300, Rounding = 0,
+        Callback = function(Value) UniMods.FlySpeed = Value end
+    })
+    movementBox:AddToggle('mv_noclip', {
+        Text = 'Noclip', Default = UniMods.Noclip,
+        Callback = function(Value) UniMods.Noclip = Value end
+    })
+
+    -- === WORLD TAB (VISUALS) ===
+    local espBox = Tabs.World:AddLeftGroupbox("ESP Drawing")
+    espBox:AddToggle('esp_master', {
+        Text = 'Global ESP (Master)', Default = GlobalESP.Enabled,
+        Callback = function(Value) GlobalESP.Enabled = Value end
+    })
+    espBox:AddToggle('esp_team', {
+        Text = 'Team Check', Default = GlobalESP.TeamCheck,
+        Callback = function(Value) GlobalESP.TeamCheck = Value end
+    })
+    espBox:AddSlider('esp_dist', {
+        Text = 'Max Distance', Default = GlobalESP.MaxDistance, Min = 100, Max = 5000, Rounding = 0,
+        Callback = function(Value) GlobalESP.MaxDistance = Value end
+    })
+    espBox:AddToggle('esp_box', {
+        Text = 'Box ESP', Default = GlobalESP.Drawing.Boxes.Full.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Boxes.Full.Enabled = Value end
+    })
+    espBox:AddToggle('esp_name', {
+        Text = 'Name ESP', Default = GlobalESP.Drawing.Names.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Names.Enabled = Value end
+    })
+    espBox:AddToggle('esp_hp', {
+        Text = 'Health ESP', Default = GlobalESP.Drawing.Healthbar.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Healthbar.Enabled = Value end
+    })
+    espBox:AddToggle('esp_weapon', {
+        Text = 'Weapon ESP', Default = GlobalESP.Drawing.Weapons.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Weapons.Enabled = Value end
+    })
+    espBox:AddToggle('esp_dist2', {
+        Text = 'Distance Text', Default = GlobalESP.Drawing.Distances.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Distances.Enabled = Value end
+    })
+    espBox:AddToggle('esp_chams', {
+        Text = 'Chams (Highlight)', Default = GlobalESP.Drawing.Chams.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Chams.Enabled = Value end
+    })
+
+    local worldBox = Tabs.World:AddRightGroupbox("World/Environment")
+    worldBox:AddToggle('world_fb', {
+        Text = 'Fullbright', Default = UniMods.Fullbright,
+        Callback = function(Value) UniMods.Fullbright = Value end
+    })
+    worldBox:AddSlider('world_fov', {
+        Text = 'Field of View (FOV)', Default = UniMods.FOV, Min = 70, Max = 120, Rounding = 0,
+        Callback = function(Value) UniMods.FOV = Value end
+    })
+
+    -- === SILENT AIM TAB ===
+    local saBox = Tabs.SilentAim:AddLeftGroupbox("Silent Aim")
+    saBox:AddDropdown('sa_game', {
+        Text = 'Game Mode',
+        Values = {'Da Hood', 'Da Strike', 'Da Uphill', 'Yuu Hood'},
+        Default = SilentAimConfig.GameMode,
+        Tooltip = 'Auto-detected: ' .. DetectedGame,
+        Callback = function(Value) SilentAimConfig.GameMode = Value end
+    })
+    saBox:AddToggle('sa_master', {
+        Text = 'Silent Aim Enabled',
+        Default = SilentAimConfig.Enabled,
+        Tooltip = 'Redirects shots towards nearest enemy in FOV',
+        Callback = function(Value) SilentAimConfig.Enabled = Value end
+    })
+    saBox:AddDropdown('sa_mode', {
+        Text = 'Mode',
+        Values = {'legit', 'semi-legit', 'blatant', 'custom'},
+        Default = 'custom',
+        Callback = function(Value)
+            SilentAimConfig.Mode = Value
+            if Value == 'legit' then
+                SilentAimConfig.HitChance = 70
+                SilentAimConfig.FOVRadius = 20
+                SilentAimConfig.Prediction = 0.09
+            elseif Value == 'semi-legit' then
+                SilentAimConfig.HitChance = 90
+                SilentAimConfig.FOVRadius = 35
+                SilentAimConfig.Prediction = 0.12
+            elseif Value == 'blatant' then
+                SilentAimConfig.HitChance = 100
+                SilentAimConfig.FOVRadius = 100
+                SilentAimConfig.Prediction = 0.18
+            end
+        end
+    })
+    saBox:AddSlider('sa_hitchance', {
+        Text = 'Hit Chance %',
+        Default = SilentAimConfig.HitChance,
+        Min = 1, Max = 100, Rounding = 0,
+        Callback = function(Value) SilentAimConfig.HitChance = Value end
+    })
+    saBox:AddSlider('sa_fov', {
+        Text = 'FOV Radius',
+        Default = SilentAimConfig.FOVRadius,
+        Min = 5, Max = 200, Rounding = 0,
+        Callback = function(Value) SilentAimConfig.FOVRadius = Value end
+    })
+    saBox:AddToggle('sa_showfov', {
+        Text = 'Show FOV Circle',
+        Default = SilentAimConfig.ShowFOV,
+        Callback = function(Value) SilentAimConfig.ShowFOV = Value end
+    })
+    saBox:AddToggle('sa_radient', {
+        Text = 'Filled FOV Circle',
+        Default = SilentAimConfig.Radient,
+        Callback = function(Value) SilentAimConfig.Radient = Value end
+    })
+
+    local saBox2 = Tabs.SilentAim:AddRightGroupbox("Prediction & Filters")
+    saBox2:AddSlider('sa_pred', {
+        Text = 'Prediction',
+        Default = math.floor(SilentAimConfig.Prediction * 1000),
+        Min = 60, Max = 250, Rounding = 0,
+        Tooltip = 'Value x 0.001 = real prediction (e.g. 120 = 0.120)',
+        Callback = function(Value) SilentAimConfig.Prediction = Value * 0.001 end
+    })
+    saBox2:AddToggle('sa_autopred', {
+        Text = 'Auto-Prediction (ping-based)',
+        Default = SilentAimConfig.AutoPrediction,
+        Callback = function(Value) SilentAimConfig.AutoPrediction = Value end
+    })
+    saBox2:AddToggle('sa_wallcheck', {
+        Text = 'Wall Check',
+        Default = SilentAimConfig.WallCheck,
+        Callback = function(Value) SilentAimConfig.WallCheck = Value end
+    })
+    saBox2:AddToggle('sa_knockout', {
+        Text = 'Skip Knocked Players',
+        Default = SilentAimConfig.KnockedCheck,
+        Callback = function(Value) SilentAimConfig.KnockedCheck = Value end
+    })
+    saBox2:AddToggle('sa_anticurve', {
+        Text = 'Anti-Curve',
+        Default = SilentAimConfig.AntiCurve,
+        Callback = function(Value) SilentAimConfig.AntiCurve = Value end
+    })
+    saBox2:AddToggle('sa_noground', {
+        Text = 'No Ground Shots',
+        Default = SilentAimConfig.NoGroundShots,
+        Callback = function(Value) SilentAimConfig.NoGroundShots = Value end
+    })
+    saBox2:AddToggle('sa_nearpt', {
+        Text = 'Nearest Point Aim',
+        Default = SilentAimConfig.NearestPoint,
+        Callback = function(Value) SilentAimConfig.NearestPoint = Value end
+    })
+    saBox2:AddDropdown('sa_hitpart', {
+        Text = 'Hit Part',
+        Values = {'HumanoidRootPart', 'Head', 'UpperTorso', 'LowerTorso'},
+        Default = 'HumanoidRootPart',
+        Callback = function(Value) SilentAimConfig.HitPart = Value end
+    })
+
+    -- === MISC TAB ===
+    local utilBox = Tabs.Misc:AddLeftGroupbox("Utilities")
+    utilBox:AddToggle('util_antiafk', {
+        Text = 'Anti-AFK', Default = UniMods.AntiAfk,
+        Callback = function(Value) UniMods.AntiAfk = Value end
+    })
+    utilBox:AddToggle('util_autofarm', {
+        Text = 'Auto-Farm Money (Da/Yuu Hood)', Default = UniMods.AutoFarm,
+        Callback = function(Value) UniMods.AutoFarm = Value end
+    })
+
+    local soundBox = Tabs.Misc:AddRightGroupbox("Hit Sounds")
+    soundBox:AddToggle('hs_enabled', {
+        Text = 'Hit Sound Enabled',
+        Default = HitSounds.Enabled,
+        Callback = function(Value) HitSounds.Enabled = Value end
+    })
+    soundBox:AddDropdown('hs_type', {
+        Text = 'Sound Type',
+        Values = {'Call of Duty', 'Bubble', 'Error', 'Lazer', 'Pop'},
+        Default = 'Bubble',
+        Callback = function(Value) HitSounds.Current = Value end
+    })
+
+    -- === UI SETTINGS TAB ===
+    ThemeManager:SetLibrary(Library)
+    SaveManager:SetLibrary(Library)
+    
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({'MenuKeybind'})
+
+    ThemeManager:SetFolder('Kodasfps')
+    SaveManager:SetFolder('Kodasfps/Configs')
+
+    ThemeManager:ApplyToTab(Tabs['Settings'])
+    SaveManager:BuildConfigSection(Tabs['Settings'])
+
+    -- Menu toggle keybind
+    local menuGroup = Tabs['Settings']:AddLeftGroupbox('Menu')
+    menuGroup:AddToggle('menu_keybind_toggle', {
+        Text = 'Show/Hide Menu',
+        Default = true,
+        Callback = function(Value)
+            Library:SetVisible(Value)
+        end
+    }):AddKeyPicker('MenuKeybind', {
+        Default = 'RightControl',
+        SyncToggleState = true,
+        Mode = 'Toggle',
+        Text = 'Menu Toggle Key',
+    })
+
+    Library.ToggleKeybind = Options.MenuKeybind
+
+    Library:Notify("Kodasfps Loaded! Game: " .. DetectedGame, 4)
+end)
+
+-- Handle script crashing silently in some executors:
+if not pcallSuccess then
+    local errSg = Instance.new("ScreenGui")
+    errSg.Name = "Kodasfps_ErrorLog"
+    errSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    errSg.Parent = game:GetService("CoreGui")
+    
+    local errBg = Instance.new("Frame")
+    errBg.Size = UDim2.new(1, 0, 0, 60)
+    errBg.Position = UDim2.new(0, 0, 0, 0)
+    errBg.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+    errBg.Parent = errSg
+    
+    local errTxt = Instance.new("TextLabel")
+    errTxt.Size = UDim2.new(1, -20, 1, -10)
+    errTxt.Position = UDim2.new(0, 10, 0, 5)
+    errTxt.BackgroundTransparency = 1
+    errTxt.TextScaled = true
+    errTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
+    errTxt.Text = "KODASFPS EXECUTION ERROR: " .. tostring(pcallError)
+    errTxt.TextWrapped = true
+    errTxt.Parent = errBg
+    
+    warn("KodaFPS script execution failed:")
+    warn(tostring(pcallError))
+end
