@@ -1,0 +1,2789 @@
+--[[
+    Kodasfps - Premium FPS Cheat Hub
+    Black + White Cyberpunk Theme
+    Executor-ready Luau ScreenGui Script
+]]
+
+local pcallSuccess, pcallError = pcall(function()
+    -- Services
+    local Players = game:GetService("Players")
+    local TweenService = game:GetService("TweenService")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local CoreGui = game:GetService("CoreGui")
+
+    local LocalPlayer = Players.LocalPlayer
+
+    -- ============================================================
+    -- ESP LOGIC
+    -- ============================================================
+    local function initESP()
+        local safe_cloneref = cloneref or function(o) return o end
+        local Workspace = safe_cloneref(game:GetService("Workspace"))
+        local Cam = Workspace.CurrentCamera
+        
+        local ESP = {
+            Enabled = true,
+            TeamCheck = true,
+            MaxDistance = 2000,
+            FontSize = 11,
+            FadeOut = { OnDistance = true, OnDeath = false, OnLeave = false },
+            Drawing = {
+                Chams = {
+                    Enabled  = false, Thermal = true, FillRGB = Color3.fromRGB(0, 0, 0), Fill_Transparency = 100, OutlineRGB = Color3.fromRGB(255, 255, 255), Outline_Transparency = 100, VisibleCheck = true,
+                },
+                Names = { Enabled = true, RGB = Color3.fromRGB(0, 0, 0) },
+                Distances = { Enabled = true, Position = "Text", RGB = Color3.fromRGB(0, 0, 0) },
+                Weapons = {
+                    Enabled = false, WeaponTextRGB = Color3.fromRGB(0, 0, 0), Outlined = false, Gradient = false, GradientRGB1 = Color3.fromRGB(0, 0, 0), GradientRGB2 = Color3.fromRGB(50, 50, 50),
+                },
+                Healthbar = {
+                    Enabled = true, HealthText = true, Lerp = true, HealthTextRGB = Color3.fromRGB(255, 255, 255), Width = 2.5, Gradient = true, GradientRGB1 = Color3.fromRGB(0, 255, 0), GradientRGB2 = Color3.fromRGB(255, 255, 0), GradientRGB3 = Color3.fromRGB(255, 0, 0), 
+                },
+                Boxes = {
+                    Animate = true, RotationSpeed = 300, Gradient = false, GradientRGB1 = Color3.fromRGB(0, 0, 0), GradientRGB2 = Color3.fromRGB(50, 50, 50), GradientFill = true, GradientFillRGB1 = Color3.fromRGB(0, 0, 0), GradientFillRGB2 = Color3.fromRGB(50, 50, 50), 
+                    Filled = { Enabled = true, Transparency = 0.75, RGB = Color3.fromRGB(0, 0, 0) },
+                    Full = { Enabled = true, RGB = Color3.fromRGB(0, 0, 0) },
+                };
+            };
+        }
+
+        local RotationAngle, Tick = -45, tick()
+
+        local Functions = {}
+        function Functions:Create(Class, Properties)
+            local _Instance = typeof(Class) == 'string' and Instance.new(Class) or Class
+            for Property, Value in pairs(Properties) do _Instance[Property] = Value end
+            return _Instance
+        end
+
+        local EspGui = Functions:Create("ScreenGui", { Parent = CoreGui, Name = "Kodasfps_ESP" })
+
+        local function CreateESP(plr)
+            if EspGui:FindFirstChild(plr.Name) then EspGui[plr.Name]:Destroy() end
+            
+            local Name = Functions:Create("TextLabel", {Parent = EspGui, Position = UDim2.new(0.5, 0, 0, -11), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.Code, TextSize = ESP.FontSize, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(255, 255, 255), RichText = true})
+            local Weapon = Functions:Create("TextLabel", {Parent = EspGui, Position = UDim2.new(0.5, 0, 0, 31), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.Code, TextSize = ESP.FontSize, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(255, 255, 255), RichText = true})
+            local Box = Functions:Create("Frame", {Parent = EspGui, BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0})
+            local Gradient1 = Functions:Create("UIGradient", {Parent = Box, Enabled = ESP.Drawing.Boxes.GradientFill, Color = ColorSequence.new{ColorSequenceKeypoint.new(0, ESP.Drawing.Boxes.GradientFillRGB1), ColorSequenceKeypoint.new(1, ESP.Drawing.Boxes.GradientFillRGB2)}})
+            local Outline = Functions:Create("UIStroke", {Parent = Box, Enabled = ESP.Drawing.Boxes.Gradient, Transparency = 0, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Miter})
+            local Gradient2 = Functions:Create("UIGradient", {Parent = Outline, Enabled = ESP.Drawing.Boxes.Gradient, Color = ColorSequence.new{ColorSequenceKeypoint.new(0, ESP.Drawing.Boxes.GradientRGB1), ColorSequenceKeypoint.new(1, ESP.Drawing.Boxes.GradientRGB2)}})
+            local Healthbar = Functions:Create("Frame", {Parent = EspGui, BackgroundColor3 = Color3.fromRGB(0, 255, 0), BackgroundTransparency = 0})
+            local BehindHealthbar = Functions:Create("Frame", {Parent = EspGui, ZIndex = -1, BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 0})
+            Functions:Create("UIGradient", {Parent = Healthbar, Enabled = ESP.Drawing.Healthbar.Gradient, Rotation = -90, Color = ColorSequence.new{ColorSequenceKeypoint.new(0, ESP.Drawing.Healthbar.GradientRGB1), ColorSequenceKeypoint.new(0.5, ESP.Drawing.Healthbar.GradientRGB2), ColorSequenceKeypoint.new(1, ESP.Drawing.Healthbar.GradientRGB3)}})
+            local HealthText = Functions:Create("TextLabel", {Parent = EspGui, Position = UDim2.new(0.5, 0, 0, 31), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.Code, TextSize = ESP.FontSize, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(255, 255, 255)})
+            local Chams = Functions:Create("Highlight", {Parent = EspGui, FillTransparency = 1, OutlineTransparency = 0, OutlineColor = Color3.fromRGB(0, 0, 0), DepthMode = "AlwaysOnTop"})
+            
+            local function HideESP()
+                Box.Visible = false
+                Name.Visible = false
+                Weapon.Visible = false
+                Healthbar.Visible = false
+                BehindHealthbar.Visible = false
+                HealthText.Visible = false
+                Chams.Enabled = false
+            end
+            
+            local Connection
+            Connection = RunService.RenderStepped:Connect(function()
+                if not plr or not plr.Parent then
+                    HideESP()
+                    if Connection then Connection:Disconnect() end
+                    return
+                end
+                
+                if ESP.Enabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
+                    local HRP = plr.Character.HumanoidRootPart
+                    local Humanoid = plr.Character.Humanoid
+                    local Pos, OnScreen = Cam:WorldToScreenPoint(HRP.Position)
+                    local Dist = (Cam.CFrame.Position - HRP.Position).Magnitude / 3.5714285714
+                    
+                    if OnScreen and Dist <= ESP.MaxDistance and (not ESP.TeamCheck or plr.Team ~= LocalPlayer.Team) then
+                        -- Project top of head and bottom of feet to get true avatar height on screen
+                        local char = plr.Character
+                        local head  = char:FindFirstChild("Head")
+                        local lfoot = char:FindFirstChild("LeftFoot") or char:FindFirstChild("Left Leg") or HRP
+
+                        local topPos    = head  and (head.Position  + Vector3.new(0, head.Size.Y / 2, 0))  or (HRP.Position + Vector3.new(0, 3, 0))
+                        local botPos    = lfoot and (lfoot.Position - Vector3.new(0, lfoot.Size.Y / 2, 0)) or (HRP.Position - Vector3.new(0, 3, 0))
+
+                        local topScreen = Cam:WorldToScreenPoint(topPos)
+                        local botScreen = Cam:WorldToScreenPoint(botPos)
+
+                        local h = math.abs(botScreen.Y - topScreen.Y)
+                        local w = h * 0.6   -- natural avatar width ratio
+                        -- Clamp minimums so box doesn't vanish at long range
+                        h = math.max(h, 6)
+                        w = math.max(w, 4)
+
+                        Chams.Adornee = plr.Character
+                        Chams.Enabled = ESP.Drawing.Chams.Enabled
+                        Chams.FillColor = ESP.Drawing.Chams.FillRGB
+                        Chams.OutlineColor = ESP.Drawing.Chams.OutlineRGB
+                        if ESP.Drawing.Chams.Thermal then
+                            local breathe_effect = math.atan(math.sin(tick() * 2)) * 2 / math.pi
+                            Chams.FillTransparency = ESP.Drawing.Chams.Fill_Transparency * breathe_effect * 0.01
+                            Chams.OutlineTransparency = ESP.Drawing.Chams.Outline_Transparency * breathe_effect * 0.01
+                        end
+                        Chams.DepthMode = ESP.Drawing.Chams.VisibleCheck and "Occluded" or "AlwaysOnTop"
+
+                        -- Use actual projected top of avatar for box origin
+                        local boxTop = math.min(topScreen.Y, botScreen.Y)
+                        Box.Visible = ESP.Drawing.Boxes.Full.Enabled
+                        Box.Position = UDim2.new(0, Pos.X - w / 2, 0, boxTop)
+                        Box.Size = UDim2.new(0, w, 0, h)
+                        if ESP.Drawing.Boxes.Filled.Enabled then
+                            Box.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                            Box.BackgroundTransparency = ESP.Drawing.Boxes.GradientFill and ESP.Drawing.Boxes.Filled.Transparency or 1
+                            Box.BorderSizePixel = 1
+                        else
+                            Box.BackgroundTransparency = 1
+                        end
+                        
+                        RotationAngle = RotationAngle + (tick() - Tick) * ESP.Drawing.Boxes.RotationSpeed * math.cos(math.pi / 4 * tick() - math.pi / 2)
+                        Gradient1.Rotation = ESP.Drawing.Boxes.Animate and RotationAngle or -45
+                        Gradient2.Rotation = ESP.Drawing.Boxes.Animate and RotationAngle or -45
+                        Tick = tick()
+
+                        local health = Humanoid.Health / Humanoid.MaxHealth
+                        Healthbar.Visible = ESP.Drawing.Healthbar.Enabled
+                        Healthbar.Position = UDim2.new(0, Pos.X - w / 2 - 6, 0, boxTop + h * (1 - health))
+                        Healthbar.Size = UDim2.new(0, ESP.Drawing.Healthbar.Width, 0, h * health)
+                        BehindHealthbar.Visible = ESP.Drawing.Healthbar.Enabled
+                        BehindHealthbar.Position = UDim2.new(0, Pos.X - w / 2 - 6, 0, boxTop)
+                        BehindHealthbar.Size = UDim2.new(0, ESP.Drawing.Healthbar.Width, 0, h)
+                        
+                        if ESP.Drawing.Healthbar.HealthText then
+                            local healthPercentage = math.floor(health * 100)
+                            HealthText.Position = UDim2.new(0, Pos.X - w / 2 - 6, 0, boxTop + h * (1 - healthPercentage / 100) + 3)
+                            HealthText.Text = tostring(healthPercentage)
+                            HealthText.Visible = Humanoid.Health < Humanoid.MaxHealth and ESP.Drawing.Healthbar.Enabled
+                            HealthText.TextColor3 = ESP.Drawing.Healthbar.Lerp and (health >= 0.75 and Color3.fromRGB(0, 255, 0) or health >= 0.5 and Color3.fromRGB(255, 255, 0) or health >= 0.25 and Color3.fromRGB(255, 170, 0) or Color3.fromRGB(255, 0, 0)) or ESP.Drawing.Healthbar.HealthTextRGB
+                        else
+                            HealthText.Visible = false
+                        end
+
+                        Name.Visible = ESP.Drawing.Names.Enabled
+                        Name.Text = string.format('(<font color="rgb(%d, %d, %d)">E</font>) %s', 0, 0, 0, plr.Name)
+                        Name.Position = UDim2.new(0, Pos.X, 0, boxTop - 9)
+
+                        if ESP.Drawing.Distances.Enabled then
+                            Weapon.Position = UDim2.new(0, Pos.X, 0, boxTop + h + 8)
+                            Name.Text = Name.Text .. string.format(" [%d]", math.floor(Dist))
+                        end
+
+                        Weapon.Text = "none"
+                        Weapon.Visible = ESP.Drawing.Weapons.Enabled
+                    else
+                        HideESP()
+                    end
+                else
+                    HideESP()
+                end
+            end)
+        end
+
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer then coroutine.wrap(CreateESP)(v) end      
+        end
+        Players.PlayerAdded:Connect(function(v)
+            coroutine.wrap(CreateESP)(v)
+        end)
+        
+        return ESP
+    end
+
+    local GlobalESP = initESP()
+
+    -- ============================================================
+    -- COMBAT / AIMBOT / TRIGGERBOT LOGIC
+    -- ============================================================
+    local function initCombat()
+        local Mouse = LocalPlayer:GetMouse()
+        local UserInputService = game:GetService("UserInputService")
+        local RunService = game:GetService("RunService")
+
+        -- ── Triggerbot ──────────────────────────────────────────────────────
+        local TB = {
+            Hotkey      = Enum.KeyCode.T,
+            HotkeyToggle= true,
+            Toggle      = false,
+            -- Detection box (matches goodnight config: Width=3, Height=5)
+            BoxW        = 3,
+            BoxH        = 5,
+            MaxDistance = 150,      -- studs
+            Prediction  = 0.12,     -- velocity prediction
+            WallCheck   = true,
+            KnockedCheck= true,
+            Cooldown    = 0.05,
+        }
+        local tbLastShot = 0
+
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if gpe then return end
+            if TB.HotkeyToggle then
+                if input.KeyCode == TB.Hotkey then TB.Toggle = not TB.Toggle end
+            else
+                if input.KeyCode == TB.Hotkey then TB.Toggle = true end
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(input, gpe)
+            if not TB.HotkeyToggle and input.KeyCode == TB.Hotkey then TB.Toggle = false end
+        end)
+
+        -- Returns true if target is behind a wall
+        local function tbWallCheck(hrp)
+            local cam = Workspace.CurrentCamera
+            local rp  = RaycastParams.new()
+            rp.FilterType = Enum.RaycastFilterType.Blacklist
+            rp.FilterDescendantsInstances = {LocalPlayer.Character or {}, cam}
+            local dir = hrp.Position - cam.CFrame.Position
+            local res = Workspace:Raycast(cam.CFrame.Position, dir, rp)
+            return res ~= nil and not res.Instance:IsDescendantOf(hrp.Parent)
+        end
+
+        -- Returns true if player is knocked (Da Hood / Yuu Hood)
+        local function tbIsKnocked(p)
+            if not p.Character then return false end
+            local be = p.Character:FindFirstChild("BodyEffects")
+            if be then local ko = be:FindFirstChild("K.O"); if ko and ko.Value then return true end end
+            return p.Character:FindFirstChild("GRABBING_CONSTRAINT") ~= nil
+        end
+
+        -- Box-overlap detection: projects all enemy parts to screen and checks
+        -- if any land inside a small box around the screen center.
+        -- This matches the goodnight.llc approach (Width/Height box, predicted pos).
+        local function getPlayerInBox()
+            local cam    = Workspace.CurrentCamera
+            local vp     = cam.ViewportSize
+            local cx, cy = vp.X / 2, vp.Y / 2
+            local hw, hh = TB.BoxW * 10, TB.BoxH * 10  -- scale to pixels
+
+            local best, bestDist = nil, math.huge
+
+            for _, p in pairs(Players:GetPlayers()) do
+                if p == LocalPlayer then continue end
+                if not p.Character then continue end
+                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                local hum = p.Character:FindFirstChild("Humanoid")
+                if not hrp or not hum or hum.Health <= 0 then continue end
+
+                -- Distance check
+                local dist = (Workspace.CurrentCamera.CFrame.Position - hrp.Position).Magnitude
+                if dist > TB.MaxDistance * 3.5 then continue end  -- studs to game units
+
+                -- Knocked check
+                if TB.KnockedCheck and tbIsKnocked(p) then continue end
+
+                -- Check Head first (priority), fallback HRP
+                local partsToCheck = {"Head", "UpperTorso", "HumanoidRootPart"}
+                for _, partName in ipairs(partsToCheck) do
+                    local part = p.Character:FindFirstChild(partName)
+                    if not part then continue end
+
+                    -- Predicted position
+                    local predictedPos = part.Position + hrp.Velocity * TB.Prediction
+                    local screenPos, onScreen = cam:WorldToViewportPoint(predictedPos)
+                    if not onScreen then continue end
+
+                    local sx, sy = screenPos.X, screenPos.Y
+                    -- Box overlap test
+                    if math.abs(sx - cx) <= hw and math.abs(sy - cy) <= hh then
+                        -- Wall check only if needed
+                        if TB.WallCheck and tbWallCheck(hrp) then continue end
+
+                        local d = (Vector2.new(sx, sy) - Vector2.new(cx, cy)).Magnitude
+                        if d < bestDist then
+                            bestDist = d
+                            best = p
+                        end
+                        break  -- found a valid part for this player, stop checking parts
+                    end
+                end
+            end
+            return best
+        end
+
+        RunService.Heartbeat:Connect(function()
+            if not TB.Toggle then return end
+            local now = tick()
+            if now - tbLastShot < TB.Cooldown then return end
+
+            local hitPlayer = getPlayerInBox()
+            if not hitPlayer then return end
+
+            tbLastShot = now
+            -- mouse1click is the most reliable across executors
+            if type(mouse1click) == "function" then
+                mouse1click()
+            elseif type(mouse1press) == "function" and type(mouse1release) == "function" then
+                mouse1press()
+                task.delay(0.008, function() mouse1release() end)
+            end
+        end)
+
+        -- ── Aim Assist ───────────────────────────────────────────────────────
+        local AA = {
+            Enabled       = false,
+            FollowMode    = "Camera",   -- "Camera" or "Mouse"
+            FOV           = 120,
+            ShowFOV       = true,
+            FOVColor      = Color3.fromRGB(0, 255, 255),
+            AimPart       = "Head",
+            -- Smoothness: {enabled, value} — lower value = smoother/slower
+            SmoothnessOn  = true,
+            Smoothness    = 0.025,
+            -- Prediction
+            PredictionOn  = true,
+            AutoPrediction= true,       -- uses bullet speed + ping + net delay
+            Prediction    = 0.128,      -- manual value if AutoPrediction off
+        }
+
+        local aaFovCircle
+        if type(Drawing) == "table" and type(Drawing.new) == "function" then
+            aaFovCircle = Drawing.new("Circle")
+            aaFovCircle.Visible   = false
+            aaFovCircle.Filled    = false
+            aaFovCircle.Thickness = 1.5
+            aaFovCircle.Color     = AA.FOVColor
+        end
+
+        -- Auto prediction: derives prediction from bullet speed, ping and server delay
+        local function aaGetAutoPrediction()
+            local ping = 0
+            pcall(function()
+                local pingStr = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()
+                local parts   = string.split(pingStr, "(")
+                ping = tonumber(parts[1]) or 0
+            end)
+            -- Map ping to prediction value (same table as silent aim)
+            local pingMap = {
+                {190,0.180},{180,0.170},{170,0.165},{160,0.1574},{150,0.1555},
+                {140,0.141},{130,0.1344},{120,0.1344},{110,0.1300},{100,0.1295},
+                {90,0.1295},{80,0.1300},{70,0.1290},{60,0.1250},{50,0.1230},
+                {40,0.1190},{30,0.1100},{20,0.1000},
+            }
+            for _, entry in ipairs(pingMap) do
+                if ping < entry[1] then return entry[2] end
+            end
+            return 0.128
+        end
+
+        -- Persistent target: stays on current target until dead/left/out of FOV
+        local aaPersistTarget = nil
+
+        local function aaIsTargetValid(part)
+            if not part or not part.Parent then return false end
+            local hum = part.Parent:FindFirstChild("Humanoid")
+            if not hum or hum.Health <= 0 then return false end
+            local cam = Workspace.CurrentCamera
+            local pos, vis = cam:WorldToViewportPoint(part.Position)
+            if not vis then return false end
+            local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+            return (Vector2.new(pos.X, pos.Y) - center).Magnitude <= AA.FOV * 1.5
+        end
+
+        -- Returns nearest visible player part within FOV
+        local function aaGetTarget()
+            -- Stick with current target if still valid in FOV
+            if aaPersistTarget and aaIsTargetValid(aaPersistTarget) then
+                return aaPersistTarget
+            end
+            -- Current target lost — find a new one
+            local cam    = Workspace.CurrentCamera
+            local vp     = cam.ViewportSize
+            local center = Vector2.new(vp.X / 2, vp.Y / 2)
+            local radius = AA.FOV
+            local best, bestDist = nil, radius
+
+            for _, v in pairs(Players:GetPlayers()) do
+                if v == LocalPlayer then continue end
+                if not v.Character then continue end
+                local part = v.Character:FindFirstChild(AA.AimPart)
+                          or v.Character:FindFirstChild("HumanoidRootPart")
+                if not part then continue end
+                local hum = v.Character:FindFirstChild("Humanoid")
+                if not hum or hum.Health <= 0 then continue end
+
+                local pos, vis = cam:WorldToViewportPoint(part.Position)
+                if not vis then continue end
+
+                local d = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                if d < bestDist then
+                    bestDist = d
+                    best = part
+                end
+            end
+            aaPersistTarget = best
+            return best
+        end
+
+        -- Update auto prediction every 2s
+        local aaPredLastUpdate = 0
+        local aaPredCurrent    = AA.Prediction
+
+        RunService.Heartbeat:Connect(function()
+            if not AA.Enabled then return end
+            if AA.AutoPrediction and tick() - aaPredLastUpdate > 2 then
+                aaPredCurrent    = aaGetAutoPrediction()
+                aaPredLastUpdate = tick()
+            end
+        end)
+
+        RunService.RenderStepped:Connect(function()
+            local cam = Workspace.CurrentCamera
+            local vp  = cam.ViewportSize
+            local center = Vector2.new(vp.X / 2, vp.Y / 2)
+
+            -- FOV circle at screen center
+            if aaFovCircle then
+                aaFovCircle.Visible   = AA.Enabled and AA.ShowFOV
+                aaFovCircle.Radius    = AA.FOV
+                aaFovCircle.Color     = AA.FOVColor
+                aaFovCircle.Position  = center
+            end
+
+            if not AA.Enabled then return end
+
+            local target = aaGetTarget()
+            if not target then return end
+            if not target.Parent then return end
+
+            local hrp = target.Parent:FindFirstChild("HumanoidRootPart")
+            local vel = hrp and hrp.Velocity or Vector3.new(0, 0, 0)
+            local pred = AA.PredictionOn and (AA.AutoPrediction and aaPredCurrent or AA.Prediction) or 0
+
+            -- Predicted world position
+            local aimPos = target.Position + vel * pred
+
+            -- Smooth factor: lower Smoothness = smoother lerp
+            local alpha = AA.SmoothnessOn and AA.Smoothness or 1
+
+            if AA.FollowMode == "Camera" then
+                -- Rotate camera toward target
+                local targetCF = CFrame.new(cam.CFrame.Position, aimPos)
+                cam.CFrame = cam.CFrame:Lerp(targetCF, alpha)
+
+            elseif AA.FollowMode == "Mouse" then
+                -- Move mouse cursor toward the target screen position
+                local screenPos = cam:WorldToViewportPoint(aimPos)
+                local curMouse  = Vector2.new(
+                    game:GetService("UserInputService"):GetMouseLocation().X,
+                    game:GetService("UserInputService"):GetMouseLocation().Y
+                )
+                local targetScreen = Vector2.new(screenPos.X, screenPos.Y)
+                local newPos = curMouse:Lerp(targetScreen, alpha)
+                if type(mousemoveabs) == "function" then
+                    mousemoveabs(math.floor(newPos.X), math.floor(newPos.Y))
+                end
+            end
+        end)
+
+        return TB, AA
+    end
+
+    local TriggerbotConfig, AimAssistConfig = initCombat()
+
+    -- ============================================================
+    -- TARGET AIM (FULL FEATURE PORT)
+    -- ============================================================
+    local function initTargetAim()
+        local Camera = Workspace.CurrentCamera
+
+        local TA = {
+            Enabled           = false,
+            AutoShoot         = false,
+            LookAt            = false,
+            AutoSwitch        = false,
+            Notify            = true,
+            NotifyDuration    = 2,
+            AimPart           = "Head",
+            ClosestBodyPart   = false,
+            RandomBodyPart    = false,
+            Prediction        = 0.165,
+            UseAirAimPart     = false,
+            AirAimPart        = "HumanoidRootPart",
+            UseAirOffset      = false,
+            AirOffset         = 0.04,
+            AntiGroundShots   = false,
+            DampeningFactor   = 0.7,
+            UseFOV            = true,
+            VisualizeFOV      = true,
+            FOVRadius         = 150,
+            FOVColor          = Color3.fromRGB(0, 255, 255),
+            FOVTransparency   = 0,
+            ResolverEnabled   = false,
+            ResolverMethod    = "Recalculate",
+            UpdateTime        = 100,
+            UseChecks         = false,
+            CheckKnocked      = true,
+            CheckWall         = false,
+            VisualsEnabled    = true,
+            TracerEnabled     = false,
+            TracerColor       = Color3.fromRGB(0, 255, 255),
+            TracerThickness   = 2,
+            DotEnabled        = false,
+            DotColor          = Color3.fromRGB(0, 255, 255),
+            DotSize           = 6,
+            ChamsEnabled      = false,
+            ChamsFillColor    = Color3.fromRGB(0, 255, 255),
+            ChamsOutlineColor = Color3.fromRGB(255, 255, 255),
+            TeleportEnabled   = false,
+            TeleportType      = "Random",
+            TeleportRandomization  = 3,
+            TeleportStrafeSpeed    = 1,
+            TeleportStrafeDistance = 5,
+            TeleportStrafeHeight   = 2,
+            TeleportKeybind        = false,
+            LockKey                = Enum.KeyCode.RightShift,
+        }
+
+        local TAState = {
+            target       = nil,
+            isTargetting = false,
+            predictedPos = Vector3.new(0,0,0),
+            lastAutoShoot = 0,
+        }
+
+        -- Drawing objects
+        local taDrawings = {}
+        if type(Drawing) == "table" and type(Drawing.new) == "function" then
+            taDrawings.fovCircle = Drawing.new("Circle")
+            taDrawings.fovCircle.Visible     = false
+            taDrawings.fovCircle.Filled      = false
+            taDrawings.fovCircle.Thickness   = 1.5
+            taDrawings.fovCircle.Color       = TA.FOVColor
+
+            taDrawings.tracer = Drawing.new("Line")
+            taDrawings.tracer.Visible        = false
+            taDrawings.tracer.Thickness      = 2
+            taDrawings.tracer.Color          = TA.TracerColor
+
+            taDrawings.dot = Drawing.new("Circle")
+            taDrawings.dot.Visible           = false
+            taDrawings.dot.Filled            = true
+            taDrawings.dot.Color             = TA.DotColor
+            taDrawings.dot.Radius            = TA.DotSize
+        end
+
+        local taChams = Instance.new("Highlight")
+        taChams.FillTransparency    = 0.5
+        taChams.OutlineTransparency = 0
+        taChams.Parent              = nil
+
+        local function taIsValid(p)
+            return p and p ~= LocalPlayer
+                and p.Character
+                and p.Character:FindFirstChild("HumanoidRootPart")
+                and p.Character:FindFirstChild("Humanoid")
+                and p.Character.Humanoid.Health > 0
+        end
+
+        local function taIsVisible(part)
+            local rp = RaycastParams.new()
+            rp.FilterType = Enum.RaycastFilterType.Blacklist
+            rp.FilterDescendantsInstances = {LocalPlayer.Character or {}}
+            local dir = part.Position - Camera.CFrame.Position
+            local res = Workspace:Raycast(Camera.CFrame.Position, dir, rp)
+            return res == nil or res.Instance:IsDescendantOf(part.Parent)
+        end
+
+        local function taIsInAir(p)
+            local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+            if not hum then return false end
+            local s = hum:GetState()
+            return s == Enum.HumanoidStateType.Freefall or s == Enum.HumanoidStateType.Jumping
+        end
+
+        local function taIsKnocked(p)
+            if not p.Character then return false end
+            local be = p.Character:FindFirstChild("BodyEffects")
+            if be then local ko = be:FindFirstChild("K.O"); if ko and ko.Value then return true end end
+            return p.Character:FindFirstChild("GRABBING_CONSTRAINT") ~= nil
+        end
+
+        local function taClosestBodyPart(p)
+            local cam = Workspace.CurrentCamera
+            local vp  = cam.ViewportSize
+            local ctr = Vector2.new(vp.X/2, vp.Y/2)
+            local best, bestD = nil, math.huge
+            for _, part in pairs(p.Character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    local pos, on = cam:WorldToViewportPoint(part.Position)
+                    if on then
+                        local d = (Vector2.new(pos.X, pos.Y) - ctr).Magnitude
+                        if d < bestD then bestD = d; best = part end
+                    end
+                end
+            end
+            return best
+        end
+
+        local function taRandomBodyPart(p)
+            local mesh = {}
+            for _, v in pairs(p.Character:GetChildren()) do
+                if v:IsA("MeshPart") then table.insert(mesh, v) end
+            end
+            return #mesh > 0 and mesh[math.random(1,#mesh)] or p.Character:FindFirstChild("HumanoidRootPart")
+        end
+
+        local resolverCache = {}
+        local function taResolveVel(p)
+            local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp then return Vector3.new(0,0,0) end
+            if TA.ResolverMethod == "MoveDirection" then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                return hum and (hum.MoveDirection * hum.WalkSpeed) or Vector3.new(0,0,0)
+            end
+            local key = p.UserId
+            local now = tick()
+            if not resolverCache[key] then resolverCache[key] = {pos = hrp.Position, t = now} end
+            local dt  = now - resolverCache[key].t
+            local vel = dt > 0 and (hrp.Position - resolverCache[key].pos) / dt or hrp.Velocity
+            if dt >= TA.UpdateTime/1000 then resolverCache[key] = {pos = hrp.Position, t = now} end
+            return vel
+        end
+
+        local function taNearestPlayer()
+            local cam    = Workspace.CurrentCamera
+            local vpSize = cam.ViewportSize
+            local center = Vector2.new(vpSize.X/2, vpSize.Y/2)
+            local radius = TA.UseFOV and TA.FOVRadius or math.huge
+            local best, bestD = nil, radius
+            for _, p in pairs(Players:GetPlayers()) do
+                if not taIsValid(p) then continue end
+                if TA.UseChecks then
+                    if TA.CheckKnocked and taIsKnocked(p) then continue end
+                    if TA.CheckWall and not taIsVisible(p.Character.HumanoidRootPart) then continue end
+                end
+                local hrp = p.Character.HumanoidRootPart
+                local pos, onScreen = cam:WorldToViewportPoint(hrp.Position)
+                if not onScreen then continue end
+                if not taIsVisible(hrp) then continue end
+                local d = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                if d < bestD then bestD = d; best = p end
+            end
+            return best
+        end
+
+        local function taGetAimPart(p)
+            if TA.RandomBodyPart    then return taRandomBodyPart(p) end
+            if TA.ClosestBodyPart   then return taClosestBodyPart(p) end
+            if TA.UseAirAimPart and taIsInAir(p) then
+                return p.Character:FindFirstChild(TA.AirAimPart) or p.Character:FindFirstChild("HumanoidRootPart")
+            end
+            return p.Character:FindFirstChild(TA.AimPart) or p.Character:FindFirstChild("HumanoidRootPart")
+        end
+
+        local function taGetPredicted(p)
+            if not taIsValid(p) then return nil end
+            local part = taGetAimPart(p)
+            if not part then return nil end
+            local hrp  = p.Character.HumanoidRootPart
+            local vel  = TA.ResolverEnabled and taResolveVel(p) or hrp.Velocity
+            if TA.AntiGroundShots and taIsInAir(p) then
+                local goingDown = vel:Dot(Vector3.new(0,-1,0))
+                if goingDown > 0.05 then vel = vel * Vector3.new(1, TA.DampeningFactor, 1) end
+            end
+            local pred = part.Position + vel * TA.Prediction
+            if TA.UseAirOffset and taIsInAir(p) then pred = pred + Vector3.new(0, TA.AirOffset, 0) end
+            return pred
+        end
+
+        local function taNotify(msg)
+            if not TA.Notify then return end
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Target Aim", Text = msg, Duration = TA.NotifyDuration
+                })
+            end)
+        end
+
+        local function taSetTarget(p)
+            if TAState.target == p then return end
+            TAState.target       = p
+            TAState.isTargetting = p ~= nil
+            if p then taNotify("Targeting " .. (p.DisplayName or p.Name))
+            else      taNotify("Untargeting") end
+            if not p then taChams.Parent = nil end
+        end
+
+        -- Lock is now driven by the UI KeyPicker callback via _G._KodaTA_RequestLock
+        -- (set by the LinoriaLib KeyPicker in the Combat tab UI)
+
+        -- Teleport active state is driven by the Settings keybind picker via _G._KodaTA_TpActive
+
+        -- Main heartbeat
+        RunService.Heartbeat:Connect(function()
+            local cam    = Workspace.CurrentCamera
+            local vpSize = cam.ViewportSize
+            local center = Vector2.new(vpSize.X/2, vpSize.Y/2)
+
+            -- FOV circle
+            if taDrawings.fovCircle then
+                taDrawings.fovCircle.Visible      = TA.Enabled and TA.UseFOV and TA.VisualizeFOV
+                taDrawings.fovCircle.Radius       = TA.FOVRadius
+                taDrawings.fovCircle.Color        = TA.FOVColor
+                taDrawings.fovCircle.Transparency = TA.FOVTransparency
+                taDrawings.fovCircle.Position     = center
+            end
+
+            if not TA.Enabled then
+                if taDrawings.tracer then taDrawings.tracer.Visible = false end
+                if taDrawings.dot    then taDrawings.dot.Visible    = false end
+                taChams.Parent = nil
+                taSetTarget(nil)
+                _G._KodaTA_RequestLock = nil
+                return
+            end
+
+            -- Poll KeyPicker lock request (set by UI keybind callback)
+            if _G._KodaTA_RequestLock ~= nil then
+                if _G._KodaTA_RequestLock == "unlock" then
+                    taSetTarget(nil)
+                else
+                    taSetTarget(taNearestPlayer())
+                end
+                _G._KodaTA_RequestLock = nil
+            end
+
+            -- Auto-switch
+            if TA.AutoSwitch then
+                local n = taNearestPlayer()
+                if n ~= TAState.target then taSetTarget(n) end
+            end
+
+            -- Validate target
+            if TAState.target and not taIsValid(TAState.target) then taSetTarget(nil) end
+
+            local target = TAState.target
+
+            -- Predicted position
+            if target then
+                local pp = taGetPredicted(target)
+                if pp then TAState.predictedPos = pp end
+            end
+
+            -- Look At
+            if TA.LookAt and target and taIsValid(target) and LocalPlayer.Character
+                and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local root = LocalPlayer.Character.HumanoidRootPart
+                local tp   = target.Character.HumanoidRootPart.Position
+                root.CFrame = CFrame.new(root.Position, Vector3.new(tp.X, root.Position.Y, tp.Z))
+            end
+
+            -- Auto Shoot
+            if TA.AutoShoot and target and taIsValid(target)
+                and (tick() - TAState.lastAutoShoot) >= 0.1 then
+                local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                if tool then
+                    pcall(function() tool:Activate() end)
+                    TAState.lastAutoShoot = tick()
+                end
+            end
+
+            -- Visuals
+            if TA.VisualsEnabled and target and taIsValid(target) then
+                local ps    = cam:WorldToViewportPoint(TAState.predictedPos)
+                local sp2   = Vector2.new(ps.X, ps.Y)
+                local onScr = ps.Z > 0
+
+                if taDrawings.tracer then
+                    taDrawings.tracer.Visible   = TA.TracerEnabled and onScr
+                    taDrawings.tracer.From      = center
+                    taDrawings.tracer.To        = sp2
+                    taDrawings.tracer.Color     = TA.TracerColor
+                    taDrawings.tracer.Thickness = TA.TracerThickness
+                end
+
+                if taDrawings.dot then
+                    taDrawings.dot.Visible   = TA.DotEnabled and onScr
+                    taDrawings.dot.Position  = sp2
+                    taDrawings.dot.Color     = TA.DotColor
+                    taDrawings.dot.Radius    = TA.DotSize
+                end
+
+                if TA.ChamsEnabled then
+                    taChams.FillColor    = TA.ChamsFillColor
+                    taChams.OutlineColor = TA.ChamsOutlineColor
+                    taChams.Parent       = target.Character
+                else
+                    taChams.Parent = nil
+                end
+            else
+                if taDrawings.tracer then taDrawings.tracer.Visible = false end
+                if taDrawings.dot    then taDrawings.dot.Visible    = false end
+                taChams.Parent = nil
+            end
+
+            -- Teleport
+            if TA.TeleportEnabled and _G._KodaTA_TpActive and target and taIsValid(target)
+                and LocalPlayer.Character
+                and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local root = LocalPlayer.Character.HumanoidRootPart
+                local tHRP = target.Character.HumanoidRootPart
+                local cf
+                if TA.TeleportType == "Strafe" then
+                    local t = tick()
+                    cf = CFrame.new(tHRP.Position)
+                        * CFrame.Angles(0, 2*math.pi*t*TA.TeleportStrafeSpeed % (2*math.pi), 0)
+                        * CFrame.new(0, TA.TeleportStrafeHeight, TA.TeleportStrafeDistance)
+                else
+                    local r = TA.TeleportRandomization
+                    cf = tHRP.CFrame + Vector3.new(
+                        math.random(-r*10, r*10)/10, 0,
+                        math.random(-r*10, r*10)/10)
+                end
+                pcall(function() root.CFrame = cf end)
+            end
+        end)
+
+        -- Hook tool activation: snap camera AND redirect the shot remote to target
+        local taTConn
+        local function taFireRemote(predictedPos)
+            -- Mirror Silent Aim remote logic for both supported games
+            local RS  = game:GetService("ReplicatedStorage")
+            local gid = game.PlaceId
+            local pv  = Vector3.new(predictedPos.X, predictedPos.Y, predictedPos.Z)
+            -- Da Strike / Da Uphill / Yuu Hood
+            local MAINEVENT = RS:FindFirstChild("MAINEVENT") or RS:FindFirstChild("MainEvent")
+            -- Da Hood uses UpdateMousePos, others use MOUSE
+            local isDaHood = (gid == 2788229376 or gid == 7213786345)
+            if isDaHood then
+                local r = RS:FindFirstChild("MainEvent") or RS:FindFirstChild("MAINEVENT")
+                if r then pcall(function() r:FireServer("UpdateMousePos", pv) end) end
+            else
+                if MAINEVENT then pcall(function() MAINEVENT:FireServer("MOUSE", pv) end) end
+            end
+            _G.KodaFPS_PlayHitSound = true
+        end
+
+        local function taHookChar(char)
+            char.ChildAdded:Connect(function(child)
+                if not child:IsA("Tool") then return end
+                if taTConn then taTConn:Disconnect() end
+                taTConn = child.Activated:Connect(function()
+                    if not TA.Enabled or not TAState.target then return end
+                    local pp = taGetPredicted(TAState.target)
+                    if not pp then return end
+                    -- 1. Snap camera toward predicted position (smooth)
+                    local cam = Workspace.CurrentCamera
+                    cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, pp), TA.Prediction)
+                    -- 2. Fire game remote so the server registers the hit at predicted pos
+                    taFireRemote(pp)
+                end)
+            end)
+        end
+        if LocalPlayer.Character then taHookChar(LocalPlayer.Character) end
+        LocalPlayer.CharacterAdded:Connect(function(char) taSetTarget(nil); taHookChar(char) end)
+
+        return TA, TAState
+    end
+
+    local TargetAimConfig, TargetAimState = initTargetAim()
+
+    -- ============================================================
+    -- UNIVERSAL & YUU HOOD MOD LOGIC
+    -- ============================================================
+    local function initUniversalMods()
+        local Mods = {
+            WalkSpeed = 50, JumpPower = 100, SpeedHack = false, InfJump = false,
+            Fly = false, FlySpeed = 50, Noclip = false, Fullbright = false, FOV = 90, Wireframe = false,
+            AntiAfk = true, AutoFarm = false, NoRecoil = false, InstantReload = false, Wallbang = false
+        }
+        
+        local VirtualUser = game:GetService("VirtualUser")
+        local Lighting = game:GetService("Lighting")
+        local RunService = game:GetService("RunService")
+        local Workspace = game:GetService("Workspace")
+        local UserInputService = game:GetService("UserInputService")
+        
+        -- Default Lighting Cache
+        local defaultAmbient, defaultBottom, defaultTop = Lighting.Ambient, Lighting.ColorShift_Bottom, Lighting.ColorShift_Top
+
+        -- Infinite Jump + Anti-AFK
+        UserInputService.JumpRequest:Connect(function()
+            if Mods.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+
+        LocalPlayer.Idled:Connect(function()
+            if Mods.AntiAfk then
+                VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+                task.wait(1)
+                VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+            end
+        end)
+
+        local bg, bv
+        local function toggleFly(v)
+            Mods.Fly = v
+            if v and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local root = LocalPlayer.Character.HumanoidRootPart
+                bg = Instance.new("BodyGyro", root)
+                bg.P = 9e4; bg.maxTorque = Vector3.new(9e9, 9e9, 9e9); bg.cframe = root.CFrame
+                bv = Instance.new("BodyVelocity", root)
+                bv.velocity = Vector3.new(0, 0, 0); bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+            else
+                if bg then bg:Destroy() bg = nil end
+                if bv then bv:Destroy() bv = nil end
+            end
+        end
+
+        RunService.RenderStepped:Connect(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            
+            if Mods.Fullbright then
+                Lighting.Ambient = Color3.new(1, 1, 1)
+                Lighting.ColorShift_Bottom = Color3.new(1, 1, 1)
+                Lighting.ColorShift_Top = Color3.new(1, 1, 1)
+            else
+                Lighting.Ambient = defaultAmbient
+                Lighting.ColorShift_Bottom = defaultBottom
+                Lighting.ColorShift_Top = defaultTop
+            end
+            
+            Workspace.CurrentCamera.FieldOfView = Mods.FOV
+            
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if Mods.SpeedHack and hum then
+                hum.WalkSpeed = Mods.WalkSpeed
+                hum.JumpPower = Mods.JumpPower
+                if not hum.UseJumpPower then hum.UseJumpPower = true end
+            end
+            
+            if Mods.Noclip then
+                for _, p in pairs(char:GetDescendants()) do
+                    if p:IsA("BasePart") then p.CanCollide = false end
+                end
+            end
+            
+            if Mods.Fly and char:FindFirstChild("HumanoidRootPart") and bg and bv then
+                local cam = Workspace.CurrentCamera
+                local speed = tonumber(Mods.FlySpeed) or 50
+                local ctrl = {f = 0, b = 0, l = 0, r = 0}
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then ctrl.f = 1 end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then ctrl.b = -1 end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then ctrl.l = -1 end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then ctrl.r = 1 end
+                
+                local dir = cam.CFrame.lookVector * (ctrl.f + ctrl.b) + cam.CFrame.rightVector * (ctrl.r + ctrl.l)
+                if dir.Magnitude > 0 then dir = dir.Unit end
+                bv.Velocity = dir * speed
+                bg.CFrame = cam.CFrame
+            end
+        end)
+        
+        -- Da Hood / Yuu Hood Gun Exploits via GC hooks
+        task.spawn(function()
+            while task.wait(1) do
+                if Mods.NoRecoil or Mods.InstantReload or Mods.Wallbang then
+                    if type(getgc) == "function" then
+                        for _, v in pairs(getgc(true)) do
+                            if type(v) == "table" then
+                                if Mods.NoRecoil and rawget(v, "Recoil") ~= nil then v.Recoil = 0 end
+                                if Mods.NoRecoil and rawget(v, "RecoilMax") ~= nil then v.RecoilMax = 0 end
+                                if Mods.NoRecoil and rawget(v, "RecoilMin") ~= nil then v.RecoilMin = 0 end
+                                
+                                if Mods.InstantReload and rawget(v, "ReloadTime") ~= nil then v.ReloadTime = 0.05 end
+                                
+                                if Mods.Wallbang and rawget(v, "Penetration") ~= nil then v.Penetration = 100 end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+
+        -- Da Hood / Yuu Hood specific AutoFarm (Money Drops)
+        task.spawn(function()
+            while task.wait(0.2) do
+                if Mods.AutoFarm and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local root = LocalPlayer.Character.HumanoidRootPart
+                    local dropFolder = Workspace:FindFirstChild("Ignored") and Workspace.Ignored:FindFirstChild("Drop")
+                    if dropFolder then
+                        for _, v in pairs(dropFolder:GetChildren()) do
+                            if v.Name == "MoneyDrop" and v:IsA("Part") then
+                                local cd = v:FindFirstChild("ClickDetector")
+                                if cd then
+                                    root.CFrame = v.CFrame
+                                    if type(fireclickdetector) == "function" then
+                                        fireclickdetector(cd)
+                                    end
+                                    task.wait(0.3)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+
+        Mods.ToggleFly = toggleFly
+        return Mods
+    end
+
+    local UniMods = initUniversalMods()
+
+    -- ============================================================
+    -- SILENT AIM (MULTI-GAME) BACKEND
+    -- ============================================================
+
+    -- Auto-detect game by PlaceId
+    local GAME_IDS = {
+        [100447459001944] = "Da Uphill",
+        [77250653506933]  = "Da Strike",
+        [2788229376]      = "Da Hood",
+        [7213786345]      = "Da Hood",
+        [9872300030]      = "Yuu Hood",
+    }
+    local DetectedGame = GAME_IDS[game.PlaceId] or "Da Hood"
+
+    local SilentAimConfig = {
+        Enabled       = false,
+        HitChance     = 90,
+        FOVRadius     = 35,
+        ShowFOV       = true,
+        WallCheck     = true,
+        KnockedCheck  = true,
+        AntiCurve     = true,
+        NoGroundShots = true,
+        Mode          = "custom",
+        Prediction    = 0.12,
+        AutoPrediction= false,
+        HitPart       = "HumanoidRootPart",
+        NearestPoint  = true,
+        Radient       = true,
+        DrawFOVSides  = 64,
+        GameMode      = DetectedGame,
+    }
+
+    local function initSilentAim()
+        local SAPlayers     = game:GetService("Players")
+        local SARunService  = game:GetService("RunService")
+        local SACamera      = workspace.CurrentCamera
+        local SALocalPlayer = SAPlayers.LocalPlayer
+        local SAMouse       = SALocalPlayer:GetMouse()
+        local SAGuiInset    = game:GetService("GuiService"):GetGuiInset()
+
+        _G.SilentTarget = nil
+
+        -- FOV Drawing Circle
+        if _G.SilentFOVCircle and _G.SilentFOVCircle.Remove then _G.SilentFOVCircle:Remove() end
+        if type(Drawing) == "table" and type(Drawing.new) == "function" then
+            _G.SilentFOVCircle = Drawing.new("Circle")
+            _G.SilentFOVCircle.Color = Color3.new(1, 1, 1)
+            _G.SilentFOVCircle.Thickness = 1
+            _G.SilentFOVCircle.Filled = false
+            _G.SilentFOVCircle.Transparency = 1
+            _G.SilentFOVCircle.Visible = false
+        end
+
+        local function isPlayerValid(p)
+            return p and p.Character
+                and p.Character:FindFirstChild("HumanoidRootPart")
+                and p.Character:FindFirstChild("Humanoid")
+                and p.Character:FindFirstChild("Head")
+        end
+
+        local function calculateHitChance(pct)
+            return (math.random(0, 100) / 100) <= (math.floor(pct) / 100)
+        end
+
+        local function wallCheck(targetPart, targetChar)
+            local origin = SACamera.CFrame.Position
+            local _, onScreen = SACamera:WorldToViewportPoint(targetPart.Position)
+            if onScreen then
+                local rp = RaycastParams.new()
+                rp.FilterType = Enum.RaycastFilterType.Blacklist
+                rp.FilterDescendantsInstances = {SALocalPlayer.Character or {}, SACamera}
+                local result = workspace:Raycast(origin, targetPart.Position - origin, rp)
+                if result then
+                    return not result.Instance or result.Instance:IsDescendantOf(targetChar)
+                end
+            end
+            return false
+        end
+
+        local function getClosestBodyPart(char)
+            local closest, part = math.huge, nil
+            for _, p in pairs(char:GetChildren()) do
+                if p:IsA("BasePart") and not string.find(p.Name:lower(), "gun") then
+                    local pos, onScreen = SACamera:WorldToScreenPoint(p.Position)
+                    if onScreen then
+                        local d = (Vector2.new(SAMouse.X, SAMouse.Y) - Vector2.new(pos.X, pos.Y)).Magnitude
+                        if d < closest then closest = d; part = p end
+                    end
+                end
+            end
+            return part
+        end
+
+        local function getNearestPoint(part)
+            if not part then return nil end
+            local half      = part.Size * 0.5
+            local transform = part.CFrame:PointToObjectSpace(SAMouse.Hit.Position)
+            return part.CFrame * Vector3.new(
+                math.clamp(transform.X, -half.X, half.X),
+                math.clamp(transform.Y, -half.Y, half.Y),
+                math.clamp(transform.Z, -half.Z, half.Z)
+            )
+        end
+
+        local function getClosestTarget()
+            if not calculateHitChance(SilentAimConfig.HitChance) then return nil end
+            local target, closestDist = nil, math.huge
+            for _, p in pairs(SAPlayers:GetPlayers()) do
+                if p ~= SALocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = p.Character.HumanoidRootPart
+                    local pos, onScreen = SACamera:WorldToScreenPoint(hrp.Position)
+                    if onScreen then
+                        local d = (Vector2.new(SAMouse.X, SAMouse.Y) - Vector2.new(pos.X, pos.Y)).Magnitude * 0.6
+                        -- Knocked check
+                        if SilentAimConfig.KnockedCheck and isPlayerValid(p) then
+                            local be = p.Character:FindFirstChild("BodyEffects")
+                            local grabbed = p.Character:FindFirstChild("GRABBING_CONSTRAINT")
+                            if be then
+                                local ko = be:FindFirstChild("K.O")
+                                if (ko and ko.Value) or grabbed then continue end
+                            end
+                        end
+                        -- Wall check
+                        if SilentAimConfig.WallCheck and isPlayerValid(p) then
+                            local tp = p.Character:FindFirstChild(SilentAimConfig.HitPart)
+                            if tp and not wallCheck(tp, p.Character) then continue end
+                        end
+                        -- Health check (skip near-dead)
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        if hum and hum.Health < 4 then continue end
+
+                        if d < closestDist and d < SilentAimConfig.FOVRadius * 3 then
+                            closestDist = d
+                            target = p
+                        end
+                    end
+                end
+            end
+            return target
+        end
+
+        local function getPredictedPosition()
+            local tgt = _G.SilentTarget
+            if not isPlayerValid(tgt) then return nil end
+            local targetChar = tgt.Character
+            local hrp        = targetChar.HumanoidRootPart
+            local hum        = targetChar:FindFirstChildOfClass("Humanoid")
+            if not hrp or not hum then return nil end
+
+            local targetVel = hrp.Velocity
+            local targetMov = hum.MoveDirection
+            local baseCF
+
+            if SilentAimConfig.NearestPoint then
+                local hitPartName = SilentAimConfig.HitPart
+                local hp = hitPartName == "Head" or hitPartName == "UpperTorso" or hitPartName == "LowerTorso"
+                if hp then
+                    local closest = getClosestBodyPart(targetChar)
+                    if closest then hitPartName = closest.Name end
+                end
+                local tp = targetChar:FindFirstChild(hitPartName) or targetChar:FindFirstChild("HumanoidRootPart")
+                if tp then
+                    local np = getNearestPoint(tp)
+                    baseCF = np or tp.Position
+                end
+            else
+                local tp = targetChar:FindFirstChild(SilentAimConfig.HitPart)
+                if tp then baseCF = tp.Position end
+            end
+
+            if not baseCF then return nil end
+
+            -- AntiCurve / NoGroundShots logic
+            local antiCurve = SilentAimConfig.AntiCurve and
+                (targetVel.Magnitude > 86 or (targetVel.Magnitude < 1 and targetMov.Magnitude > 0.01)
+                    or (targetVel.Magnitude > 5 and targetMov.Magnitude < 0.01))
+
+            local noGround = SilentAimConfig.NoGroundShots and targetVel.Y < -20
+
+            local pred = SilentAimConfig.Prediction
+            if antiCurve then
+                return baseCF + (targetMov * pred * 16)
+            elseif noGround then
+                return baseCF + (Vector3.new(targetVel.X, 0, targetVel.Z) * pred)
+            else
+                return baseCF + (targetVel * pred)
+            end
+        end
+
+        local function applySilentAim()
+            if not SilentAimConfig.Enabled then return end
+            _G.SilentTarget = getClosestTarget()
+            if not _G.SilentTarget or not _G.SilentTarget.Character then return end
+            local hrpPos = SACamera:WorldToScreenPoint(_G.SilentTarget.Character.HumanoidRootPart.Position)
+            local d = (Vector2.new(SAMouse.X, SAMouse.Y) - Vector2.new(hrpPos.X, hrpPos.Y)).Magnitude * 0.6
+            if d < SilentAimConfig.FOVRadius * 3 then
+                local predicted = getPredictedPosition()
+                if predicted then
+                    -- Fire the correct remote based on detected game
+                    local RS = game:GetService("ReplicatedStorage")
+                    local gm = SilentAimConfig.GameMode
+                    local predictedVec = Vector3.new(predicted.X, predicted.Y, predicted.Z)
+
+                    if gm == "Da Strike" then
+                        local remote = RS:FindFirstChild("MAINEVENT")
+                        if remote then remote:FireServer("MOUSE", predictedVec) end
+                    elseif gm == "Da Uphill" then
+                        local remote = RS:FindFirstChild("MAINEVENT")
+                        if remote then remote:FireServer("MOUSE", predictedVec) end
+                    elseif gm == "Yuu Hood" then
+                        local remote = RS:FindFirstChild("MAINEVENT") or RS:FindFirstChild("MainEvent")
+                        if remote then remote:FireServer("MOUSE", predictedVec) end
+                    elseif gm == "Da Hood" then
+                        local remote = RS:FindFirstChild("MainEvent") or RS:FindFirstChild("MAINEVENT")
+                        if remote then remote:FireServer("UpdateMousePos", predictedVec) end
+                    else
+                        -- Fallback: try MAINEVENT
+                        local remote = RS:FindFirstChild("MAINEVENT") or RS:FindFirstChild("MainEvent")
+                        if remote then remote:FireServer("MOUSE", predictedVec) end
+                    end
+                    -- Hit sound on successful redirect
+                    _G.KodaFPS_PlayHitSound = true
+                end
+            end
+        end
+
+        -- FOV circle update loop
+        if type(SARunService.Heartbeat) == "table" or type(SARunService.Heartbeat.Connect) == "function" then
+            SARunService.Heartbeat:Connect(function()
+                if _G.SilentFOVCircle then
+                    _G.SilentFOVCircle.Visible = SilentAimConfig.Enabled and SilentAimConfig.ShowFOV
+                    _G.SilentFOVCircle.Radius = (SilentAimConfig.FOVRadius or 35) * 3
+                    _G.SilentFOVCircle.Position = Vector2.new(SAMouse.X, SAMouse.Y + SAGuiInset.Y)
+                    _G.SilentFOVCircle.Filled = SilentAimConfig.Radient
+                    _G.SilentFOVCircle.Transparency = SilentAimConfig.Radient and 0.3 or 1
+                end
+            end)
+
+            -- Auto-prediction ping loop
+            SARunService.Heartbeat:Connect(function()
+                if not SilentAimConfig.AutoPrediction then return end
+                local ok, pingStr = pcall(function()
+                    return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()
+                end)
+                if not ok or not pingStr then return end
+                local split = string.split(pingStr, "(")
+                local ping  = tonumber(split and split[1])
+                if not ping then return end
+                local pingMap = {
+                    {190,0.180},{180,0.170},{170,0.165},{160,0.1574},{150,0.1555},
+                    {140,0.141},{130,0.1344},{120,0.1344},{110,0.1300},{100,0.1295},
+                    {90,0.1295},{80,0.1300},{70,0.1290},{60,0.1250},{50,0.1230},
+                    {40,0.1190},{30,0.1100},{20,0.1000}
+                }
+                for _, entry in ipairs(pingMap) do
+                    if ping < entry[1] then SilentAimConfig.Prediction = entry[2]; break end
+                end
+            end)
+        end
+
+        -- Hook Tool.Activated
+        local toolConn
+        local function onToolAdded(tool)
+            if tool:IsA("Tool") then
+                if toolConn then toolConn:Disconnect() end
+                toolConn = tool.Activated:Connect(applySilentAim)
+            end
+        end
+        local function onCharReady(char)
+            char.ChildAdded:Connect(onToolAdded)
+        end
+        if SALocalPlayer.Character then onCharReady(SALocalPlayer.Character) end
+        SALocalPlayer.CharacterAdded:Connect(onCharReady)
+    end
+
+    initSilentAim()
+
+    -- ============================================================
+    -- HIT SOUNDS BACKEND
+    -- ============================================================
+    local HitSounds = {
+        Enabled = false,
+        Current = "Bubble",
+        SoundIds = {
+            ["Call of Duty"] = 131961101,
+            ["Bubble"]       = 131961108,
+            ["Error"]        = 131961112,
+            ["Lazer"]        = 131961118,
+            ["Pop"]          = 131961122,
+        }
+    }
+
+    local function playHitSound()
+        if not HitSounds.Enabled then return end
+        local id = HitSounds.SoundIds[HitSounds.Current] or HitSounds.SoundIds["Bubble"]
+        local s = Instance.new("Sound")
+        s.SoundId = "rbxassetid://" .. tostring(id)
+        s.Volume = 1
+        s.Parent = workspace
+        s:Play()
+        game:GetService("Debris"):AddItem(s, 3)
+    end
+
+    -- Poll the flag set by Silent Aim on each redirect
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if _G.KodaFPS_PlayHitSound then
+            _G.KodaFPS_PlayHitSound = false
+            playHitSound()
+        end
+    end)
+
+    -- ============================================================
+    -- KODAFPS LINORIALIB UI (V3.1)
+    -- ============================================================
+    local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
+    local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/ThemeManager.lua"))()
+    local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/SaveManager.lua"))()
+
+    local Window = Library:CreateWindow({
+        Title = "Kodasfps  [" .. DetectedGame .. "]",
+        Center = true,
+        AutoShow = true,
+        TabPadding = 10,
+        MenuFadeTime = 0.2
+    })
+
+    -- Make the window wider so all tabs fit
+    if Library and Library.Main then
+        pcall(function()
+            Library.Main.Size = UDim2.new(0, 700, 0, 500)
+            Library.Main.Position = UDim2.new(0.5, -350, 0.5, -250)
+        end)
+    end
+
+    local Tabs = {
+        Main = Window:AddTab("Combat"),
+        SilentAim = Window:AddTab("Silent Aim"),
+        Movement = Window:AddTab("Movement"),
+        World = Window:AddTab("Visuals"),
+        HvH = Window:AddTab("HvH"),
+        Misc = Window:AddTab("Misc"),
+        ["Settings"] = Window:AddTab("Settings")
+    }
+
+    local player = game:GetService("Players").LocalPlayer
+    Library:Notify("Welcome to Kodasfps! UserID: " .. player.UserId)
+
+    -- === MAIN TAB (COMBAT & MOVEMENT) ===
+    
+    local combatBox = Tabs.Main:AddLeftGroupbox("Aim Assist & Triggerbot")
+
+    -- ── Aim Assist ────────────────────────────────────────────────
+    combatBox:AddToggle('aa_enabled', {
+        Text    = 'Aim Assist',
+        Default = AimAssistConfig.Enabled,
+        Tooltip = 'Smoothly guides aim toward the nearest enemy in FOV.',
+        Callback = function(v) AimAssistConfig.Enabled = v end
+    })
+    combatBox:AddDropdown('aa_mode', {
+        Text    = 'Follow Mode',
+        Values  = {'Camera', 'Mouse'},
+        Default = AimAssistConfig.FollowMode,
+        Tooltip = 'Camera: rotates your camera. Mouse: moves your cursor.',
+        Callback = function(v) AimAssistConfig.FollowMode = v end
+    })
+    combatBox:AddToggle('aa_show_fov', {
+        Text    = 'Show FOV Circle',
+        Default = AimAssistConfig.ShowFOV,
+        Callback = function(v) AimAssistConfig.ShowFOV = v end
+    })
+    combatBox:AddSlider('aa_fov', {
+        Text    = 'FOV Radius',
+        Default = AimAssistConfig.FOV,
+        Min = 10, Max = 500, Rounding = 0,
+        Callback = function(v) AimAssistConfig.FOV = v end
+    })
+    combatBox:AddDropdown('aa_part', {
+        Text    = 'Aim Part',
+        Values  = {'Head', 'HumanoidRootPart', 'UpperTorso', 'LowerTorso'},
+        Default = AimAssistConfig.AimPart,
+        Callback = function(v) AimAssistConfig.AimPart = v end
+    })
+    combatBox:AddToggle('aa_smooth_on', {
+        Text    = 'Smoothness',
+        Default = AimAssistConfig.SmoothnessOn,
+        Tooltip = 'Lerp aim toward target gradually. OFF = instant snap.',
+        Callback = function(v) AimAssistConfig.SmoothnessOn = v end
+    })
+    combatBox:AddSlider('aa_smooth_val', {
+        Text    = 'Smoothness Value',
+        Default = math.floor(AimAssistConfig.Smoothness * 1000),
+        Min = 5, Max = 200, Rounding = 0,
+        Tooltip = 'Value x0.001 = real alpha (e.g. 25 = 0.025). Lower = smoother.',
+        Callback = function(v) AimAssistConfig.Smoothness = v * 0.001 end
+    })
+    combatBox:AddToggle('aa_pred_on', {
+        Text    = 'Prediction',
+        Default = AimAssistConfig.PredictionOn,
+        Callback = function(v) AimAssistConfig.PredictionOn = v end
+    })
+    combatBox:AddToggle('aa_autopred', {
+        Text    = 'Auto Prediction',
+        Default = AimAssistConfig.AutoPrediction,
+        Tooltip = 'Uses bullet speed + ping + network delay for best prediction.',
+        Callback = function(v) AimAssistConfig.AutoPrediction = v end
+    })
+    combatBox:AddInput('aa_pred_val', {
+        Text    = 'Manual Prediction',
+        Default = tostring(AimAssistConfig.Prediction),
+        Numeric = true,
+        Finished = true,
+        Tooltip = 'Only used when Auto Prediction is OFF.',
+        Callback = function(v) AimAssistConfig.Prediction = tonumber(v) or 0.128 end
+    })
+    combatBox:AddToggle('aa_keybind_toggle', {
+        Text    = 'Aim Assist Keybind',
+        Default = AimAssistConfig.Enabled,
+        Tooltip = 'Bind a key to toggle Aim Assist on/off.',
+        Callback = function(v) AimAssistConfig.Enabled = v end
+    }):AddKeyPicker('aa_keybind', {
+        Default         = 'Q',
+        SyncToggleState = true,
+        Mode            = 'Toggle',
+        Text            = 'Aim Assist Key',
+        Callback        = function(v) AimAssistConfig.Enabled = v end
+    })
+
+    combatBox:AddDivider()
+
+    combatBox:AddToggle('tb_master', {
+        Text = 'Triggerbot Master',
+        Default = TriggerbotConfig.Toggle,
+        Callback = function(Value) TriggerbotConfig.Toggle = Value end
+    })
+    combatBox:AddToggle('tb_toggle', {
+        Text = 'Toggle Key Mode',
+        Default = TriggerbotConfig.HotkeyToggle,
+        Callback = function(Value) TriggerbotConfig.HotkeyToggle = Value end
+    })
+    combatBox:AddToggle('tb_wallcheck', {
+        Text = 'Wall Check',
+        Default = TriggerbotConfig.WallCheck,
+        Callback = function(Value) TriggerbotConfig.WallCheck = Value end
+    })
+    combatBox:AddToggle('tb_knockedcheck', {
+        Text = 'Skip Knocked',
+        Default = TriggerbotConfig.KnockedCheck,
+        Callback = function(Value) TriggerbotConfig.KnockedCheck = Value end
+    })
+    combatBox:AddSlider('tb_boxw', {
+        Text = 'Detection Box Width',
+        Default = TriggerbotConfig.BoxW,
+        Min = 1, Max = 20, Rounding = 0,
+        Tooltip = 'Width of the screen-center detection box (scaled x10px)',
+        Callback = function(Value) TriggerbotConfig.BoxW = Value end
+    })
+    combatBox:AddSlider('tb_boxh', {
+        Text = 'Detection Box Height',
+        Default = TriggerbotConfig.BoxH,
+        Min = 1, Max = 30, Rounding = 0,
+        Tooltip = 'Height of the screen-center detection box (scaled x10px)',
+        Callback = function(Value) TriggerbotConfig.BoxH = Value end
+    })
+    combatBox:AddSlider('tb_maxdist', {
+        Text = 'Max Distance',
+        Default = TriggerbotConfig.MaxDistance,
+        Min = 10, Max = 500, Rounding = 0,
+        Tooltip = 'Max stud range to detect enemies',
+        Callback = function(Value) TriggerbotConfig.MaxDistance = Value end
+    })
+
+    -- ══════════════════════════════════════════════════════════════
+    -- TARGET AIM — MAIN SECTION (Combat Tab Left)
+    -- ══════════════════════════════════════════════════════════════
+    combatBox:AddDivider()
+
+    combatBox:AddToggle('ta_enabled', {
+        Text    = 'Target Aim',
+        Default = TargetAimConfig.Enabled,
+        Tooltip = 'Master toggle. Lock onto nearest visible enemy (E key).',
+        Callback = function(v) TargetAimConfig.Enabled = v end
+    })
+    combatBox:AddToggle('ta_auto_shoot', {
+        Text    = 'Auto Shoot',
+        Default = TargetAimConfig.AutoShoot,
+        Tooltip = 'Automatically fires your tool at the locked target.',
+        Callback = function(v) TargetAimConfig.AutoShoot = v end
+    })
+    combatBox:AddToggle('ta_look_at', {
+        Text    = 'Look At',
+        Default = TargetAimConfig.LookAt,
+        Tooltip = 'Rotates your HRP to face the locked target.',
+        Callback = function(v) TargetAimConfig.LookAt = v end
+    })
+    combatBox:AddToggle('ta_notify', {
+        Text    = 'Notify on Lock',
+        Default = TargetAimConfig.Notify,
+        Callback = function(v) TargetAimConfig.Notify = v end
+    })
+    combatBox:AddSlider('ta_notify_dur', {
+        Text    = 'Notify Duration',
+        Default = TargetAimConfig.NotifyDuration,
+        Min = 1, Max = 10, Rounding = 0,
+        Callback = function(v) TargetAimConfig.NotifyDuration = v end
+    })
+    combatBox:AddToggle('ta_closest_bp', {
+        Text    = 'Closest Body Part',
+        Default = TargetAimConfig.ClosestBodyPart,
+        Tooltip = 'Aims at whichever body part is closest to your crosshair.',
+        Callback = function(v) TargetAimConfig.ClosestBodyPart = v end
+    })
+    combatBox:AddDropdown('ta_aim_part', {
+        Text    = 'Aim Part',
+        Values  = {'Head', 'HumanoidRootPart', 'UpperTorso', 'LowerTorso'},
+        Default = TargetAimConfig.AimPart,
+        Tooltip = 'Head priority — set fallback here. Body = HumanoidRootPart.',
+        Callback = function(v) TargetAimConfig.AimPart = v end
+    })
+    combatBox:AddInput('ta_prediction', {
+        Text    = 'Prediction',
+        Default = tostring(TargetAimConfig.Prediction),
+        Numeric = true,
+        Finished = true,
+        Tooltip = 'Velocity multiplier for shot prediction (default 0.165).',
+        Callback = function(v) TargetAimConfig.Prediction = tonumber(v) or 0.165 end
+    })
+
+    -- Air Aim Part
+    combatBox:AddToggle('ta_air_part', {
+        Text    = 'Use Air Aim Part',
+        Default = TargetAimConfig.UseAirAimPart,
+        Callback = function(v) TargetAimConfig.UseAirAimPart = v end
+    })
+    combatBox:AddDropdown('ta_air_aim_part', {
+        Text    = 'Air Aim Part',
+        Values  = {'Head', 'HumanoidRootPart', 'UpperTorso', 'LowerTorso'},
+        Default = TargetAimConfig.AirAimPart,
+        Callback = function(v) TargetAimConfig.AirAimPart = v end
+    })
+    combatBox:AddToggle('ta_air_offset', {
+        Text    = 'Air Offset',
+        Default = TargetAimConfig.UseAirOffset,
+        Callback = function(v) TargetAimConfig.UseAirOffset = v end
+    })
+    combatBox:AddSlider('ta_air_offset_val', {
+        Text    = 'Air Offset Amount',
+        Default = math.floor(TargetAimConfig.AirOffset * 100),
+        Min = -100, Max = 100, Rounding = 0,
+        Tooltip = 'Value divided by 100 = real offset (e.g. 4 = 0.04)',
+        Callback = function(v) TargetAimConfig.AirOffset = v / 100 end
+    })
+
+    -- Anti Ground Shots
+    combatBox:AddToggle('ta_anti_ground', {
+        Text    = 'Anti Ground Shots',
+        Default = TargetAimConfig.AntiGroundShots,
+        Callback = function(v) TargetAimConfig.AntiGroundShots = v end
+    })
+    combatBox:AddSlider('ta_dampening', {
+        Text    = 'Dampening Factor',
+        Default = math.floor(TargetAimConfig.DampeningFactor * 100),
+        Min = 0, Max = 100, Rounding = 0,
+        Tooltip = 'Dampens Y velocity when target is falling (0–1 scaled x100).',
+        Callback = function(v) TargetAimConfig.DampeningFactor = v / 100 end
+    })
+
+    -- FOV
+    combatBox:AddToggle('ta_use_fov', {
+        Text    = 'Use FOV',
+        Default = TargetAimConfig.UseFOV,
+        Callback = function(v) TargetAimConfig.UseFOV = v end
+    })
+    combatBox:AddToggle('ta_vis_fov', {
+        Text    = 'Visualize FOV (Cyan Circle)',
+        Default = TargetAimConfig.VisualizeFOV,
+        Callback = function(v) TargetAimConfig.VisualizeFOV = v end
+    })
+    combatBox:AddSlider('ta_fov_radius', {
+        Text    = 'FOV Radius',
+        Default = TargetAimConfig.FOVRadius,
+        Min = 60, Max = 300, Rounding = 0,
+        Tooltip = 'Screen-center search radius in pixels.',
+        Callback = function(v) TargetAimConfig.FOVRadius = v end
+    })
+    combatBox:AddSlider('ta_fov_transp', {
+        Text    = 'FOV Transparency',
+        Default = math.floor(TargetAimConfig.FOVTransparency * 100),
+        Min = 0, Max = 100, Rounding = 0,
+        Callback = function(v) TargetAimConfig.FOVTransparency = v / 100 end
+    })
+
+    -- ══════════════════════════════════════════════════════════════
+    -- TARGET AIM VISUALS (Combat Tab Right — new groupbox)
+    -- ══════════════════════════════════════════════════════════════
+    local taVisualsBox = Tabs.Main:AddRightGroupbox("Target Aim Visuals")
+
+    taVisualsBox:AddToggle('ta_vis_enabled', {
+        Text    = 'Visuals Master',
+        Default = TargetAimConfig.VisualsEnabled,
+        Callback = function(v) TargetAimConfig.VisualsEnabled = v end
+    })
+
+    -- Line (tracer)
+    taVisualsBox:AddToggle('ta_tracer', {
+        Text    = 'Line (Tracer)',
+        Default = TargetAimConfig.TracerEnabled,
+        Tooltip = 'Draws a line from screen center to the predicted aim position.',
+        Callback = function(v) TargetAimConfig.TracerEnabled = v end
+    })
+    taVisualsBox:AddSlider('ta_tracer_thick', {
+        Text    = 'Line Thickness',
+        Default = TargetAimConfig.TracerThickness,
+        Min = 1, Max = 5, Rounding = 0,
+        Callback = function(v) TargetAimConfig.TracerThickness = v end
+    })
+
+    -- Dot
+    taVisualsBox:AddToggle('ta_dot', {
+        Text    = 'Dot',
+        Default = TargetAimConfig.DotEnabled,
+        Tooltip = 'Draws a dot at the predicted aim position.',
+        Callback = function(v) TargetAimConfig.DotEnabled = v end
+    })
+    taVisualsBox:AddSlider('ta_dot_size', {
+        Text    = 'Dot Size',
+        Default = TargetAimConfig.DotSize,
+        Min = 1, Max = 20, Rounding = 0,
+        Callback = function(v) TargetAimConfig.DotSize = v end
+    })
+
+    -- Chams
+    taVisualsBox:AddToggle('ta_chams', {
+        Text    = 'Chams (Highlight)',
+        Default = TargetAimConfig.ChamsEnabled,
+        Tooltip = 'Applies a colored highlight to the locked target.',
+        Callback = function(v) TargetAimConfig.ChamsEnabled = v end
+    })
+
+    -- ══════════════════════════════════════════════════════════════
+    -- TARGET AIM TELEPORT (Combat Tab Right — second groupbox)
+    -- ══════════════════════════════════════════════════════════════
+    local taTeleportBox = Tabs.Main:AddRightGroupbox("Target Aim Teleport")
+
+    taTeleportBox:AddToggle('ta_tp_enabled', {
+        Text    = 'Teleport Enabled',
+        Default = TargetAimConfig.TeleportEnabled,
+        Tooltip = 'Hold B to teleport near the locked target.',
+        Callback = function(v) TargetAimConfig.TeleportEnabled = v end
+    })
+    taTeleportBox:AddDropdown('ta_tp_type', {
+        Text    = 'Teleport Type',
+        Values  = {'Random', 'Strafe'},
+        Default = TargetAimConfig.TeleportType,
+        Callback = function(v) TargetAimConfig.TeleportType = v end
+    })
+    taTeleportBox:AddSlider('ta_tp_rand', {
+        Text    = 'Randomization',
+        Default = TargetAimConfig.TeleportRandomization,
+        Min = 1, Max = 20, Rounding = 0,
+        Callback = function(v) TargetAimConfig.TeleportRandomization = v end
+    })
+    taTeleportBox:AddSlider('ta_tp_strafe_speed', {
+        Text    = 'Strafe Speed',
+        Default = TargetAimConfig.TeleportStrafeSpeed,
+        Min = 1, Max = 10, Rounding = 0,
+        Callback = function(v) TargetAimConfig.TeleportStrafeSpeed = v end
+    })
+    taTeleportBox:AddSlider('ta_tp_strafe_dist', {
+        Text    = 'Strafe Distance',
+        Default = TargetAimConfig.TeleportStrafeDistance,
+        Min = 1, Max = 20, Rounding = 0,
+        Callback = function(v) TargetAimConfig.TeleportStrafeDistance = v end
+    })
+    taTeleportBox:AddSlider('ta_tp_strafe_height', {
+        Text    = 'Strafe Height',
+        Default = TargetAimConfig.TeleportStrafeHeight,
+        Min = 1, Max = 20, Rounding = 0,
+        Callback = function(v) TargetAimConfig.TeleportStrafeHeight = v end
+    })
+
+    -- === WORLD TAB (VISUALS) ===
+    local espBox = Tabs.World:AddLeftGroupbox("ESP Drawing")
+    espBox:AddToggle('esp_master', {
+        Text = 'Global ESP (Master)', Default = GlobalESP.Enabled,
+        Callback = function(Value) GlobalESP.Enabled = Value end
+    })
+    espBox:AddToggle('esp_team', {
+        Text = 'Team Check', Default = GlobalESP.TeamCheck,
+        Callback = function(Value) GlobalESP.TeamCheck = Value end
+    })
+    espBox:AddSlider('esp_dist', {
+        Text = 'Max Distance', Default = GlobalESP.MaxDistance, Min = 100, Max = 5000, Rounding = 0,
+        Callback = function(Value) GlobalESP.MaxDistance = Value end
+    })
+    espBox:AddToggle('esp_box', {
+        Text = 'Box ESP', Default = GlobalESP.Drawing.Boxes.Full.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Boxes.Full.Enabled = Value end
+    })
+    espBox:AddToggle('esp_name', {
+        Text = 'Name ESP', Default = GlobalESP.Drawing.Names.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Names.Enabled = Value end
+    })
+    espBox:AddToggle('esp_hp', {
+        Text = 'Health ESP', Default = GlobalESP.Drawing.Healthbar.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Healthbar.Enabled = Value end
+    })
+    espBox:AddToggle('esp_weapon', {
+        Text = 'Weapon ESP', Default = GlobalESP.Drawing.Weapons.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Weapons.Enabled = Value end
+    })
+    espBox:AddToggle('esp_dist2', {
+        Text = 'Distance Text', Default = GlobalESP.Drawing.Distances.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Distances.Enabled = Value end
+    })
+    espBox:AddToggle('esp_chams', {
+        Text = 'Chams (Highlight)', Default = GlobalESP.Drawing.Chams.Enabled,
+        Callback = function(Value) GlobalESP.Drawing.Chams.Enabled = Value end
+    })
+
+    -- Map Visuals (Color Correction)
+    local mapColorEffect = Instance.new('ColorCorrectionEffect')
+    mapColorEffect.Enabled = false
+    mapColorEffect.Parent = game:GetService('Lighting')
+
+    local mapVisBox = Tabs.World:AddRightGroupbox('Map Visuals')
+    mapVisBox:AddToggle('map_enabled', {
+        Text = 'Map Color Correction', Default = false,
+        Tooltip = 'Apply color correction effects to the game world.',
+        Callback = function(v) mapColorEffect.Enabled = v end
+    })
+    mapVisBox:AddSlider('map_brightness', {
+        Text = 'Brightness', Default = 50, Min = 0, Max = 100, Rounding = 0,
+        Tooltip = '50 = neutral, above = brighter, below = darker.',
+        Callback = function(v) mapColorEffect.Brightness = (v - 50) / 50 end
+    })
+    mapVisBox:AddSlider('map_contrast', {
+        Text = 'Contrast', Default = 50, Min = 0, Max = 100, Rounding = 0,
+        Tooltip = '50 = neutral.',
+        Callback = function(v) mapColorEffect.Contrast = (v - 50) / 50 end
+    })
+    mapVisBox:AddSlider('map_saturation', {
+        Text = 'Saturation', Default = 50, Min = 0, Max = 100, Rounding = 0,
+        Tooltip = '50 = neutral, 0 = greyscale.',
+        Callback = function(v) mapColorEffect.Saturation = (v - 50) / 10 end
+    })
+
+    -- === SILENT AIM TAB ===
+    local saBox = Tabs.SilentAim:AddLeftGroupbox("Silent Aim")
+    saBox:AddDropdown('sa_game', {
+        Text = 'Game Mode',
+        Values = {'Da Hood', 'Da Strike', 'Da Uphill', 'Yuu Hood'},
+        Default = SilentAimConfig.GameMode,
+        Tooltip = 'Auto-detected: ' .. DetectedGame,
+        Callback = function(Value) SilentAimConfig.GameMode = Value end
+    })
+    saBox:AddToggle('sa_master', {
+        Text = 'Silent Aim Enabled',
+        Default = SilentAimConfig.Enabled,
+        Tooltip = 'Redirects shots towards nearest enemy in FOV',
+        Callback = function(Value) SilentAimConfig.Enabled = Value end
+    })
+    saBox:AddDropdown('sa_mode', {
+        Text = 'Mode',
+        Values = {'legit', 'semi-legit', 'blatant', 'custom'},
+        Default = 'custom',
+        Callback = function(Value)
+            SilentAimConfig.Mode = Value
+            if Value == 'legit' then
+                SilentAimConfig.HitChance = 70
+                SilentAimConfig.FOVRadius = 20
+                SilentAimConfig.Prediction = 0.09
+            elseif Value == 'semi-legit' then
+                SilentAimConfig.HitChance = 90
+                SilentAimConfig.FOVRadius = 35
+                SilentAimConfig.Prediction = 0.12
+            elseif Value == 'blatant' then
+                SilentAimConfig.HitChance = 100
+                SilentAimConfig.FOVRadius = 100
+                SilentAimConfig.Prediction = 0.18
+            end
+        end
+    })
+    saBox:AddSlider('sa_hitchance', {
+        Text = 'Hit Chance %',
+        Default = SilentAimConfig.HitChance,
+        Min = 1, Max = 100, Rounding = 0,
+        Callback = function(Value) SilentAimConfig.HitChance = Value end
+    })
+    saBox:AddSlider('sa_fov', {
+        Text = 'FOV Radius',
+        Default = SilentAimConfig.FOVRadius,
+        Min = 5, Max = 200, Rounding = 0,
+        Callback = function(Value) SilentAimConfig.FOVRadius = Value end
+    })
+    saBox:AddToggle('sa_showfov', {
+        Text = 'Show FOV Circle',
+        Default = SilentAimConfig.ShowFOV,
+        Callback = function(Value) SilentAimConfig.ShowFOV = Value end
+    })
+    saBox:AddToggle('sa_radient', {
+        Text = 'Filled FOV Circle',
+        Default = SilentAimConfig.Radient,
+        Callback = function(Value) SilentAimConfig.Radient = Value end
+    })
+
+    local saBox2 = Tabs.SilentAim:AddRightGroupbox("Prediction & Filters")
+    saBox2:AddSlider('sa_pred', {
+        Text = 'Prediction',
+        Default = math.floor(SilentAimConfig.Prediction * 1000),
+        Min = 60, Max = 250, Rounding = 0,
+        Tooltip = 'Value x 0.001 = real prediction (e.g. 120 = 0.120)',
+        Callback = function(Value) SilentAimConfig.Prediction = Value * 0.001 end
+    })
+    saBox2:AddToggle('sa_autopred', {
+        Text = 'Auto-Prediction (ping-based)',
+        Default = SilentAimConfig.AutoPrediction,
+        Callback = function(Value) SilentAimConfig.AutoPrediction = Value end
+    })
+    saBox2:AddToggle('sa_wallcheck', {
+        Text = 'Wall Check',
+        Default = SilentAimConfig.WallCheck,
+        Callback = function(Value) SilentAimConfig.WallCheck = Value end
+    })
+    saBox2:AddToggle('sa_knockout', {
+        Text = 'Skip Knocked Players',
+        Default = SilentAimConfig.KnockedCheck,
+        Callback = function(Value) SilentAimConfig.KnockedCheck = Value end
+    })
+    saBox2:AddToggle('sa_anticurve', {
+        Text = 'Anti-Curve',
+        Default = SilentAimConfig.AntiCurve,
+        Callback = function(Value) SilentAimConfig.AntiCurve = Value end
+    })
+    saBox2:AddToggle('sa_noground', {
+        Text = 'No Ground Shots',
+        Default = SilentAimConfig.NoGroundShots,
+        Callback = function(Value) SilentAimConfig.NoGroundShots = Value end
+    })
+    saBox2:AddToggle('sa_nearpt', {
+        Text = 'Nearest Point Aim',
+        Default = SilentAimConfig.NearestPoint,
+        Callback = function(Value) SilentAimConfig.NearestPoint = Value end
+    })
+    saBox2:AddDropdown('sa_hitpart', {
+        Text = 'Hit Part',
+        Values = {'HumanoidRootPart', 'Head', 'UpperTorso', 'LowerTorso'},
+        Default = 'HumanoidRootPart',
+        Callback = function(Value) SilentAimConfig.HitPart = Value end
+    })
+
+    -- === MOVEMENT TAB ===
+    local moveBox = Tabs.Movement:AddLeftGroupbox("Speed & Jump")
+    moveBox:AddToggle('mv_speedhack', {
+        Text = 'Speed Hack Master', Default = UniMods.SpeedHack,
+        Callback = function(Value) UniMods.SpeedHack = Value end
+    })
+    moveBox:AddSlider('mv_walkspeed', {
+        Text = 'WalkSpeed', Default = UniMods.WalkSpeed, Min = 16, Max = 250, Rounding = 0,
+        Callback = function(Value) UniMods.WalkSpeed = Value end
+    })
+    moveBox:AddToggle('mv_infjump', {
+        Text = 'Infinite Jump', Default = UniMods.InfJump,
+        Callback = function(Value) UniMods.InfJump = Value end
+    })
+    moveBox:AddSlider('mv_jumppower', {
+        Text = 'JumpPower', Default = UniMods.JumpPower, Min = 50, Max = 400, Rounding = 0,
+        Callback = function(Value) UniMods.JumpPower = Value end
+    })
+    moveBox:AddToggle('mv_noclip', {
+        Text = 'Noclip', Default = UniMods.Noclip,
+        Callback = function(Value) UniMods.Noclip = Value end
+    })
+
+    local flyBox = Tabs.Movement:AddLeftGroupbox("Fly")
+    flyBox:AddToggle('mv_fly', {
+        Text = 'Fly Enabled', Default = UniMods.Fly,
+        Tooltip = 'Use W/A/S/D to fly in camera direction.',
+        Callback = function(Value) UniMods.ToggleFly(Value) end
+    })
+    flyBox:AddSlider('mv_flyspeed', {
+        Text = 'Fly Speed', Default = UniMods.FlySpeed, Min = 10, Max = 300, Rounding = 0,
+        Callback = function(Value) UniMods.FlySpeed = Value end
+    })
+
+    local weaponBox = Tabs.Movement:AddRightGroupbox("Weapon Mods")
+    weaponBox:AddToggle('wm_recoil', {
+        Text = 'No Recoil', Default = UniMods.NoRecoil,
+        Callback = function(Value) UniMods.NoRecoil = Value end
+    })
+    weaponBox:AddToggle('wm_reload', {
+        Text = 'Instant Reload', Default = UniMods.InstantReload,
+        Callback = function(Value) UniMods.InstantReload = Value end
+    })
+    weaponBox:AddToggle('wm_wallbang', {
+        Text = 'Wallbang (Penetration)', Default = UniMods.Wallbang,
+        Callback = function(Value) UniMods.Wallbang = Value end
+    })
+
+    local worldSettingsBox = Tabs.Movement:AddRightGroupbox("World")
+    worldSettingsBox:AddToggle('world_fb', {
+        Text = 'Fullbright', Default = UniMods.Fullbright,
+        Callback = function(Value) UniMods.Fullbright = Value end
+    })
+    worldSettingsBox:AddSlider('world_fov', {
+        Text = 'Field of View', Default = UniMods.FOV, Min = 70, Max = 120, Rounding = 0,
+        Callback = function(Value) UniMods.FOV = Value end
+    })
+
+    -- === HvH TAB ===
+
+    -- ── Rapid Fire Backend ───────────────────────────────────────────
+    local RapidFire = {
+        Enabled = false,
+        Delay   = 0.01,   -- seconds between shots
+    }
+
+    local rfIsFiring = false
+
+    local rfUtility = {}
+    rfUtility.getgun = function()
+        local char = LocalPlayer.Character
+        if not char then return nil end
+        for _, tool in next, char:GetChildren() do
+            if tool:IsA("Tool") and tool:FindFirstChild("Ammo") then return tool end
+        end
+    end
+
+    rfUtility.rapid = function(tool)
+        pcall(function() tool:Activate() end)
+    end
+
+    -- Hold Mouse1 → rapid fire loop
+    UserInputService.InputBegan:Connect(function(i, gpe)
+        if gpe then return end
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            local gun = rfUtility.getgun()
+            if RapidFire.Enabled and gun and not rfIsFiring then
+                rfIsFiring = true
+                task.spawn(function()
+                    while rfIsFiring and RapidFire.Enabled do
+                        rfUtility.rapid(gun)
+                        task.wait(RapidFire.Delay)
+                    end
+                end)
+            end
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            rfIsFiring = false
+        end
+    end)
+
+    -- Upvalue cooldown zeroing (executor-specific: getconnections + debug API)
+    local function rfZeroToolCooldown(Tool)
+        if not RapidFire.Enabled then return end
+        if not Tool:IsA("Tool") then return end
+        if type(getconnections) ~= "function" then return end
+        pcall(function()
+            for _, conn in pairs(getconnections(Tool.Activated)) do
+                local info = debug.getinfo(conn.Function)
+                for idx = 1, info.nups do
+                    local val = debug.getupvalue(conn.Function, idx)
+                    if type(val) == "number" then
+                        debug.setupvalue(conn.Function, idx, 0)
+                    end
+                end
+            end
+        end)
+    end
+
+    local function rfHookChar(char)
+        char.ChildAdded:Connect(function(child)
+            rfZeroToolCooldown(child)
+        end)
+    end
+
+    if LocalPlayer.Character then rfHookChar(LocalPlayer.Character) end
+    LocalPlayer.CharacterAdded:Connect(rfHookChar)
+
+    -- HvH Tab UI
+    local hvhRapidBox = Tabs.HvH:AddLeftGroupbox("Rapid Fire")
+    hvhRapidBox:AddToggle('hvh_rf_enabled', {
+        Text    = 'Rapid Fire',
+        Default = RapidFire.Enabled,
+        Tooltip = 'Hold Mouse1 to rapidly fire your equipped gun.',
+        Callback = function(v) RapidFire.Enabled = v end
+    })
+    hvhRapidBox:AddSlider('hvh_rf_delay', {
+        Text    = 'Fire Delay (ms)',
+        Default = math.floor(RapidFire.Delay * 1000),
+        Min = 0, Max = 200, Rounding = 0,
+        Tooltip = 'Delay between rapid shots in milliseconds. 0 = fastest.',
+        Callback = function(v) RapidFire.Delay = v * 0.001 end
+    })
+
+    -- ── Force Hit Backend ─────────────────────────────────────────────
+    local ForceHit = {
+        Enabled    = false,
+        BlankShots = false,
+        HitPart    = "Head",
+        FOV = {
+            Visible      = true,
+            Transparency = 1,
+            Thickness    = 1,
+            Radius       = 400,
+            Color        = Color3.fromRGB(0, 255, 0),
+        }
+    }
+
+    local fhCachedClosest = nil  -- nearest player in FOV (live)
+
+    -- FOV Circle
+    local fhFovCircle
+    if type(Drawing) == "table" and type(Drawing.new) == "function" then
+        fhFovCircle              = Drawing.new("Circle")
+        fhFovCircle.Color        = ForceHit.FOV.Color
+        fhFovCircle.Thickness    = ForceHit.FOV.Thickness
+        fhFovCircle.Filled       = false
+        fhFovCircle.Transparency = ForceHit.FOV.Transparency
+        fhFovCircle.Radius       = ForceHit.FOV.Radius
+        fhFovCircle.Visible      = false
+    end
+
+    -- Target Highlight
+    local fhHighlight = Instance.new("Highlight")
+    fhHighlight.Parent              = CoreGui
+    fhHighlight.FillColor           = Color3.fromRGB(0, 255, 0)
+    fhHighlight.OutlineColor        = Color3.fromRGB(255, 255, 255)
+    fhHighlight.FillTransparency    = 0.5
+    fhHighlight.OutlineTransparency = 0
+    fhHighlight.Enabled             = false
+
+    local function fhGetClosestPlayer()
+        local closestDist, closestPart = nil, nil
+        local mousePos = UserInputService:GetMouseLocation()
+        for _, p in next, Players:GetPlayers() do
+            if p ~= LocalPlayer and p.Character then
+                local char    = p.Character
+                local hitPart = char:FindFirstChild(ForceHit.HitPart)
+                local hum     = char:FindFirstChild("Humanoid")
+                local ff      = char:FindFirstChildOfClass("ForceField")
+                if hitPart and hum and hum.Health > 0 and not ff then
+                    local screenPos, visible = workspace.CurrentCamera:WorldToScreenPoint(hitPart.Position)
+                    if visible then
+                        local dist = (mousePos - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                        if dist <= ForceHit.FOV.Radius and (not closestDist or dist < closestDist) then
+                            closestDist = dist
+                            closestPart = hitPart
+                        end
+                    end
+                end
+            end
+        end
+        return closestPart
+    end
+
+
+    -- Heartbeat: keep cached closest fresh
+    RunService.Heartbeat:Connect(function()
+        if not ForceHit.Enabled then return end
+        fhCachedClosest = fhGetClosestPlayer()
+    end)
+
+    -- RenderStepped: FOV circle + highlight
+    RunService.RenderStepped:Connect(function()
+        if ForceHit.Enabled then
+            if fhFovCircle then
+                fhFovCircle.Visible  = ForceHit.FOV.Visible
+                fhFovCircle.Position = UserInputService:GetMouseLocation()
+                fhFovCircle.Radius   = ForceHit.FOV.Radius
+            end
+            local active = fhCachedClosest
+            local activeChar = active and active.Parent
+            if activeChar then
+                fhHighlight.Adornee = activeChar
+                fhHighlight.Enabled = true
+            else
+                fhHighlight.Enabled = false
+            end
+        else
+            if fhFovCircle then fhFovCircle.Visible = false end
+            fhHighlight.Enabled = false
+        end
+    end)
+
+    -- Blank Shots: fire from backpack without holding gun
+    local fhMainEvent = game:GetService("ReplicatedStorage"):FindFirstChild("MainEvent")
+    RunService.Heartbeat:Connect(function()
+        if not ForceHit.Enabled or not ForceHit.BlankShots then return end
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("Head") then return end
+        local hasTool = false
+        for _, item in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if item:IsA("Tool") then hasTool = true; break end
+        end
+        if not hasTool then return end
+        local aimPart = fhCachedClosest
+        local aimChar = aimPart and aimPart.Parent
+        if aimChar and not aimChar:FindFirstChildOfClass("ForceField") and fhMainEvent then
+            pcall(function()
+                fhMainEvent:FireServer("Shoot", {
+                    {
+                        {["Instance"] = aimPart, ["Normal"] = Vector3.new(0.9937, 0.1094, -0.0226), ["Position"] = aimPart.Position},
+                        {["Instance"] = aimPart, ["Normal"] = Vector3.new(0.9937, 0.1094, -0.0226), ["Position"] = aimPart.Position},
+                        {["Instance"] = aimPart, ["Normal"] = Vector3.new(0.9937, 0.1094, -0.0226), ["Position"] = aimPart.Position},
+                        {["Instance"] = aimPart, ["Normal"] = Vector3.new(0.9937, 0.1094, -0.0226), ["Position"] = aimPart.Position},
+                        {["Instance"] = aimPart, ["Normal"] = Vector3.new(0.9937, 0.1094, -0.0226), ["Position"] = aimPart.Position},
+                    },
+                    {
+                        {["thePart"] = aimPart, ["theOffset"] = CFrame.new()},
+                        {["thePart"] = aimPart, ["theOffset"] = CFrame.new()},
+                        {["thePart"] = aimPart, ["theOffset"] = CFrame.new()},
+                        {["thePart"] = aimPart, ["theOffset"] = CFrame.new()},
+                        {["thePart"] = aimPart, ["theOffset"] = CFrame.new()},
+                    },
+                    char.Head.Position,
+                    char.Head.Position,
+                    workspace:GetServerTimeNow()
+                })
+            end)
+        end
+    end)
+
+    -- __namecall hook: redirect Shoot remote to active target
+    if type(hookmetamethod) == "function" then
+        local fhOrigNC
+        fhOrigNC = hookmetamethod(game, "__namecall", function(obj, ...)
+            local args   = {...}
+            local method = getnamecallmethod()
+
+            if not ForceHit.Enabled then return fhOrigNC(obj, ...) end
+
+            -- Suppress anti-cheat GunCheck
+            if method == "InvokeServer" and obj.Name == "MainFunction"
+                and #args > 0 and args[1] == "GunCheck" then
+                return nil
+            end
+
+            -- Redirect Shoot to active target
+            if method == "FireServer" and obj.Name == "MainEvent"
+                and #args > 0 and args[1] == "Shoot" then
+                local aimPart = fhCachedClosest
+                if aimPart then
+                    if args[2] and #args[2] >= 2 then
+                        for _, tbl in pairs(args[2][1]) do
+                            if type(tbl) == "table" then tbl["Instance"] = aimPart end
+                        end
+                        for _, tbl in pairs(args[2][2]) do
+                            if type(tbl) == "table" then
+                                tbl["thePart"]   = aimPart
+                                tbl["theOffset"] = CFrame.new()
+                            end
+                        end
+                    end
+                    return fhOrigNC(obj, unpack(args))
+                end
+            end
+
+            return fhOrigNC(obj, ...)
+        end)
+    end
+
+    -- HvH Tab UI — Force Hit groupbox
+    local hvhForceBox = Tabs.HvH:AddLeftGroupbox("Force Hit")
+    hvhForceBox:AddToggle('hvh_fh_enabled', {
+        Text    = 'Force Hit',
+        Default = ForceHit.Enabled,
+        Tooltip = 'Redirects your shots to the closest enemy in FOV.',
+        Callback = function(v) ForceHit.Enabled = v end
+    }):AddKeyPicker('hvh_fh_key', {
+        Default         = 'C',
+        SyncToggleState = true,
+        Mode            = 'Toggle',
+        Text            = 'Force Hit Key',
+        Callback        = function(v) ForceHit.Enabled = v end
+    })
+    hvhForceBox:AddDropdown('hvh_fh_part', {
+        Text    = 'Hit Part',
+        Values  = {'Head', 'HumanoidRootPart', 'UpperTorso', 'LowerTorso'},
+        Default = ForceHit.HitPart,
+        Callback = function(v) ForceHit.HitPart = v end
+    })
+    hvhForceBox:AddToggle('hvh_fh_blank', {
+        Text    = 'Blank Shots',
+        Default = ForceHit.BlankShots,
+        Tooltip = 'Fires shots from backpack without holding a gun.',
+        Callback = function(v) ForceHit.BlankShots = v end
+    })
+    hvhForceBox:AddToggle('hvh_fh_fov_vis', {
+        Text    = 'Show FOV Circle',
+        Default = ForceHit.FOV.Visible,
+        Callback = function(v) ForceHit.FOV.Visible = v end
+    })
+    hvhForceBox:AddSlider('hvh_fh_fov_radius', {
+        Text    = 'FOV Radius',
+        Default = ForceHit.FOV.Radius,
+        Min = 50, Max = 800, Rounding = 0,
+        Tooltip = 'Screen-pixel radius to scan for enemies around your crosshair.',
+        Callback = function(v) ForceHit.FOV.Radius = v end
+    })
+
+
+
+    -- ── Fake Position (Position Desync) Backend ──────────────────────────
+    local FakePos = {
+        Enabled = false,
+    }
+
+    local fpRealCFrame = nil  -- stores the real HRP CFrame each tick
+
+    RunService.Heartbeat:Connect(function()
+        if not FakePos.Enabled then return end
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        -- Save real position before faking
+        fpRealCFrame = hrp.CFrame
+        -- Teleport to desync offset (nan/inf)
+        pcall(function()
+            hrp.CFrame = hrp.CFrame * CFrame.new(9e9, 0/0, math.huge)
+        end)
+        RunService.RenderStepped:Wait()
+        -- Restore real position immediately after render
+        pcall(function()
+            hrp.CFrame = fpRealCFrame
+        end)
+    end)
+
+    -- __index hook: return saved CFrame so the game reads correct position
+    if type(hookmetamethod) == "function" and type(newcclosure) == "function" then
+        local fpOrigIndex
+        fpOrigIndex = hookmetamethod(game, "__index", newcclosure(function(self, key)
+            if not checkcaller() then
+                if key == "CFrame" and FakePos.Enabled and fpRealCFrame ~= nil then
+                    local char = LocalPlayer.Character
+                    if char then
+                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                        local hum = char:FindFirstChild("Humanoid")
+                        if hrp and self == hrp and hum and hum.Health > 0 then
+                            return fpRealCFrame
+                        end
+                    end
+                end
+            end
+            return fpOrigIndex(self, key)
+        end))
+    end
+
+    local function fpDisable()
+        FakePos.Enabled = false
+        local char = LocalPlayer.Character
+        if char and fpRealCFrame then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then pcall(function() hrp.CFrame = fpRealCFrame end) end
+        end
+    end
+
+    -- Respawn hook: instantly apply fake position when character spawns
+    local function fpOnCharacterAdded(character)
+        if not FakePos.Enabled then return end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+                 or character:WaitForChild("HumanoidRootPart", 3)
+        if not hrp then return end
+        fpRealCFrame = hrp.CFrame
+        pcall(function()
+            hrp.CFrame = CFrame.new((1e308^2)*(1/0), 0/0, -(1e308^2)*(1/0))
+        end)
+    end
+    LocalPlayer.CharacterAdded:Connect(fpOnCharacterAdded)
+
+    -- HvH Tab UI — Fake Position groupbox
+    local hvhFakePosBox = Tabs.HvH:AddRightGroupbox("Fake Position")
+    hvhFakePosBox:AddToggle('hvh_fakepos', {
+        Text    = 'Fake Position',
+        Default = FakePos.Enabled,
+        Tooltip = 'Desyncs your server-side position. Server thinks you are somewhere else.',
+        Callback = function(v)
+            if v then FakePos.Enabled = true
+            else fpDisable() end
+        end
+    }):AddKeyPicker('hvh_fakepos_key', {
+        Default         = 'X',
+        SyncToggleState = true,
+        Mode            = 'Toggle',
+        Text            = 'Fake Position Key',
+        Callback        = function(v)
+            if v then FakePos.Enabled = true
+            else fpDisable() end
+        end
+    })
+
+    -- ── Velocity Anti-Aim & Visualizer Backend ──────────────────────────
+    local VelAA = {
+        Custom  = { Enabled = false, X = 0, Y = 0, Z = 0, Preset = 'Custom' },
+        Breaker = { Enabled = false },
+        Multiply= { Enabled = false, Multiplier = 1 },
+    }
+    local VelVis = {
+        Part = 'HumanoidRootPart',
+        Dot  = { Enabled = false, Size = 3, Trans = 1, Filled = false },
+        Line = { Enabled = false, Size = 1, Trans = 1 },
+    }
+
+    local vvDot, vvLine
+    if type(Drawing) == 'table' and type(Drawing.new) == 'function' then
+        vvDot           = Drawing.new('Circle')
+        vvDot.Filled    = true
+        vvDot.Thickness = 1
+        vvDot.Visible   = false
+        vvLine          = Drawing.new('Line')
+        vvLine.Visible  = false
+        vvLine.Thickness= 1
+    end
+
+    RunService.Heartbeat:Connect(function()
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild('HumanoidRootPart')
+        if not hrp then return end
+        local vel = hrp.AssemblyLinearVelocity
+
+        if VelAA.Custom.Preset == 'Sky' then
+            VelAA.Custom.X = vel.X; VelAA.Custom.Y = math.random(80,100); VelAA.Custom.Z = vel.Z
+        elseif VelAA.Custom.Preset == 'Ground' then
+            VelAA.Custom.X = vel.X; VelAA.Custom.Y = -math.random(80,100); VelAA.Custom.Z = vel.Z
+        elseif VelAA.Custom.Preset == 'Random' then
+            VelAA.Custom.X = math.random(-300,300); VelAA.Custom.Y = math.random(-300,300); VelAA.Custom.Z = math.random(-300,300)
+        end
+        if VelAA.Custom.Enabled then
+            hrp.AssemblyLinearVelocity = Vector3.new(VelAA.Custom.X, VelAA.Custom.Y, VelAA.Custom.Z)
+            RunService.RenderStepped:Wait()
+            hrp.AssemblyLinearVelocity = vel
+        end
+        if VelAA.Breaker.Enabled then
+            hrp.AssemblyLinearVelocity = vel * 0
+            RunService.RenderStepped:Wait()
+            hrp.AssemblyLinearVelocity = vel
+        end
+        if VelAA.Multiply.Enabled then
+            local m = VelAA.Multiply.Multiplier
+            hrp.AssemblyLinearVelocity = vel * Vector3.new(m, m, m)
+            RunService.RenderStepped:Wait()
+            hrp.AssemblyLinearVelocity = vel
+        end
+
+        local visPart = char:FindFirstChild(VelVis.Part)
+        if visPart and (vvDot or vvLine) then
+            local charSP = workspace.CurrentCamera:WorldToViewportPoint(visPart.Position)
+            local predSP, onScr = workspace.CurrentCamera:WorldToViewportPoint(
+                visPart.CFrame.Position + visPart.AssemblyLinearVelocity * 0.133)
+            if vvDot then
+                if VelVis.Dot.Enabled and onScr then
+                    vvDot.Visible      = true
+                    vvDot.Radius       = VelVis.Dot.Size
+                    vvDot.Transparency = VelVis.Dot.Trans
+                    vvDot.Filled       = VelVis.Dot.Filled
+                    vvDot.Position     = Vector2.new(predSP.X, predSP.Y)
+                else vvDot.Visible = false end
+            end
+            if vvLine then
+                if VelVis.Line.Enabled and onScr then
+                    vvLine.Visible      = true
+                    vvLine.Thickness    = VelVis.Line.Size
+                    vvLine.Transparency = VelVis.Line.Trans
+                    vvLine.From         = Vector2.new(charSP.X, charSP.Y)
+                    vvLine.To           = Vector2.new(predSP.X, predSP.Y)
+                else vvLine.Visible = false end
+            end
+        end
+    end)
+
+    -- HvH Tab UI — Velocity Anti-Aim
+    local hvhVelBox = Tabs.HvH:AddRightGroupbox('Velocity Anti-Aim')
+    hvhVelBox:AddToggle('hvh_vel_custom', {
+        Text = 'Custom Velocity', Default = false,
+        Tooltip = 'Manipulates your velocity every tick to confuse server-side checks.',
+        Callback = function(v) VelAA.Custom.Enabled = v end
+    })
+    hvhVelBox:AddDropdown('hvh_vel_preset', {
+        Text = 'Preset', Values = {'Custom','Sky','Ground','Random'}, Default = 'Custom',
+        Callback = function(v) VelAA.Custom.Preset = v end
+    })
+    hvhVelBox:AddSlider('hvh_vel_x', {
+        Text = 'X', Default = 0, Min = -300, Max = 300, Rounding = 0,
+        Callback = function(v) VelAA.Custom.X = v end
+    })
+    hvhVelBox:AddSlider('hvh_vel_y', {
+        Text = 'Y', Default = 0, Min = -300, Max = 300, Rounding = 0,
+        Callback = function(v) VelAA.Custom.Y = v end
+    })
+    hvhVelBox:AddSlider('hvh_vel_z', {
+        Text = 'Z', Default = 0, Min = -300, Max = 300, Rounding = 0,
+        Callback = function(v) VelAA.Custom.Z = v end
+    })
+    hvhVelBox:AddToggle('hvh_vel_breaker', {
+        Text = 'Velocity Breaker', Default = false,
+        Tooltip = 'Zeroes your velocity each tick to break server-side checks.',
+        Callback = function(v) VelAA.Breaker.Enabled = v end
+    })
+    hvhVelBox:AddToggle('hvh_vel_mult', {
+        Text = 'Velocity Multiplier', Default = false,
+        Callback = function(v) VelAA.Multiply.Enabled = v end
+    })
+    hvhVelBox:AddSlider('hvh_vel_mult_val', {
+        Text = 'Multiplier', Default = 10, Min = -100, Max = 100, Rounding = 0,
+        Tooltip = 'Value ÷10 = multiplier. e.g. 10 = 1.0×',
+        Callback = function(v) VelAA.Multiply.Multiplier = v / 10 end
+    })
+
+    -- HvH Tab UI — Velocity Visualizer
+    local hvhVelVisBox = Tabs.HvH:AddLeftGroupbox('Velocity Visualizer')
+    hvhVelVisBox:AddDropdown('hvh_velvis_part', {
+        Text = 'Part', Values = {'HumanoidRootPart','Head','UpperTorso'}, Default = 'HumanoidRootPart',
+        Callback = function(v) VelVis.Part = v end
+    })
+    hvhVelVisBox:AddToggle('hvh_velvis_dot', {
+        Text = 'Dot Visualizer', Default = false,
+        Tooltip = 'Shows a dot at your predicted future position.',
+        Callback = function(v) VelVis.Dot.Enabled = v end
+    })
+    hvhVelVisBox:AddSlider('hvh_velvis_dot_size', {
+        Text = 'Dot Size', Default = 3, Min = 1, Max = 20, Rounding = 0,
+        Callback = function(v) VelVis.Dot.Size = v end
+    })
+    hvhVelVisBox:AddToggle('hvh_velvis_dot_fill', {
+        Text = 'Dot Filled', Default = false,
+        Callback = function(v) VelVis.Dot.Filled = v end
+    })
+    hvhVelVisBox:AddToggle('hvh_velvis_line', {
+        Text = 'Line Visualizer', Default = false,
+        Tooltip = 'Draws a line from your position to predicted future position.',
+        Callback = function(v) VelVis.Line.Enabled = v end
+    })
+    hvhVelVisBox:AddSlider('hvh_velvis_line_size', {
+        Text = 'Line Thickness', Default = 1, Min = 1, Max = 10, Rounding = 0,
+        Callback = function(v) VelVis.Line.Size = v end
+    })
+
+    -- === MISC TAB ===
+    local utilBox = Tabs.Misc:AddLeftGroupbox('Utilities')
+    utilBox:AddToggle('util_antiafk', {
+        Text = 'Anti-AFK', Default = UniMods.AntiAfk,
+        Callback = function(Value) UniMods.AntiAfk = Value end
+    })
+    utilBox:AddToggle('util_autofarm', {
+        Text = 'Auto-Farm Money (Da/Yuu Hood)', Default = UniMods.AutoFarm,
+        Callback = function(Value) UniMods.AutoFarm = Value end
+    })
+    utilBox:AddToggle('util_autoreload', {
+        Text = 'Auto Reload',
+        Default = false,
+        Tooltip = 'Automatically reloads your gun when ammo hits 0.',
+        Callback = function(v)
+            _G._KodaAutoReload = v
+        end
+    })
+
+    -- Auto Reload backend
+    _G._KodaAutoReload = false
+    RunService.Heartbeat:Connect(function()
+        if not _G._KodaAutoReload then return end
+        local char = LocalPlayer.Character
+        if not char then return end
+        local tool = char:FindFirstChildWhichIsA('Tool')
+        if tool and tool:FindFirstChild('Ammo') and tool.Ammo.Value <= 0 then
+            local ev = game:GetService('ReplicatedStorage'):FindFirstChild('MainEvent')
+            if ev then pcall(function() ev:FireServer('Reload', tool) end) end
+        end
+    end)
+
+    -- Da Hood Teleports
+    local dhTpCoords = {
+        ['Uphill']       = CFrame.new(482, 48, -602),
+        ['Military']     = CFrame.new(58.7, 25.3, -869),
+        ['Park']         = CFrame.new(-268, 22, -754),
+        ['Downhill']     = CFrame.new(-565, 8, -737),
+        ['Double Barrel']= CFrame.new(-1042, 22, -261),
+        ['Casino']       = CFrame.new(-864, 22, -143),
+        ['Trailer']      = CFrame.new(-963, -1, 469),
+        ['School']       = CFrame.new(-653, 22, 257),
+        ['Revolver']     = CFrame.new(-642, 22, -124),
+        ['Bank']         = CFrame.new(-446, 39, -286),
+        ['Sewer']        = CFrame.new(112, -27, -277),
+        ['Fire Station'] = CFrame.new(-150, 54, -94),
+        ['Hood Fitness'] = CFrame.new(-76, 23, -638),
+        ['Hood Kicks']   = CFrame.new(-188, 22, -410),
+        ['Jail']         = CFrame.new(-299, 22, -91),
+        ['Church']       = CFrame.new(205, 22, -80),
+    }
+    local dhTpNames = {'Uphill','Military','Park','Downhill','Double Barrel','Casino','Trailer','School','Revolver','Bank','Sewer','Fire Station','Hood Fitness','Hood Kicks','Jail','Church'}
+    local dhSelectedTp = 'Uphill'
+
+    local miscTpBox = Tabs.Misc:AddRightGroupbox('Da Hood Teleports')
+    miscTpBox:AddDropdown('misc_tp_loc', {
+        Text = 'Location', Values = dhTpNames, Default = 'Uphill',
+        Callback = function(v) dhSelectedTp = v end
+    })
+    miscTpBox:AddButton({
+        Text = 'Teleport',
+        Func = function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild('HumanoidRootPart') and dhTpCoords[dhSelectedTp] then
+                pcall(function() char.HumanoidRootPart.CFrame = dhTpCoords[dhSelectedTp] end)
+            end
+        end
+    })
+    miscTpBox:AddButton({
+        Text = 'Random Location',
+        Func = function()
+            local char = LocalPlayer.Character
+            local loc = dhTpNames[math.random(1, #dhTpNames)]
+            if char and char:FindFirstChild('HumanoidRootPart') and dhTpCoords[loc] then
+                pcall(function() char.HumanoidRootPart.CFrame = dhTpCoords[loc] end)
+            end
+        end
+    })
+    miscTpBox:AddButton({
+        Text = 'Code Farm',
+        Tooltip = 'Collects promo codes from all players in server and tries them all.',
+        Func = function()
+            task.spawn(function()
+                local codes = {}
+                for _, p in pairs(Players:GetPlayers()) do
+                    local ok, decoded = pcall(function()
+                        return game:GetService('HttpService'):JSONDecode(
+                            p.DataFolder.Information.Codes.Value)
+                    end)
+                    if ok and decoded then
+                        for code in pairs(decoded) do
+                            if not table.find(codes, code) then
+                                table.insert(codes, code)
+                            end
+                        end
+                    end
+                end
+                local ev = game:GetService('ReplicatedStorage'):FindFirstChild('MainEvent')
+                if ev then
+                    for _, code in ipairs(codes) do
+                        task.wait(0.1)
+                        pcall(function() ev:FireServer('EnterPromoCode', code) end)
+                    end
+                end
+                pcall(function()
+                    game.StarterGui:SetCore('SendNotification', {
+                        Title = 'Code Farm',
+                        Text  = 'Done! Tried ' .. #codes .. ' codes.',
+                        Duration = 4
+                    })
+                end)
+            end)
+        end
+    })
+
+    -- ── Mod Notifier ──────────────────────────────────────────────
+    local modNotifConfig = {
+        Enabled  = false,
+        Action   = "Notify",   -- "Notify", "Crash", "Kick"
+        -- Known moderator group IDs
+        Groups   = {128056089, 817777481, 339846382, 35074996, 12335888, 17215700, 811783767},
+        Method   = "Notification",  -- "Webhook" or "Notification"
+    }
+
+    -- Scan players for moderator group membership
+    local function checkForMods()
+        if not modNotifConfig.Enabled then return end
+        for _, p in pairs(Players:GetPlayers()) do
+            if p == LocalPlayer then continue end
+            for _, groupId in ipairs(modNotifConfig.Groups) do
+                local ok, isMember = pcall(function()
+                    return p:IsInGroup(groupId)
+                end)
+                if ok and isMember then
+                    local msg = "⚠ Moderator detected: " .. p.Name .. " (Group: " .. groupId .. ")"
+                    if modNotifConfig.Action == "Notify" then
+                        pcall(function()
+                            game.StarterGui:SetCore("SendNotification", {
+                                Title = "Mod Notifier", Text = msg, Duration = 6
+                            })
+                        end)
+                    elseif modNotifConfig.Action == "Kick" then
+                        LocalPlayer:Kick("Mod detected - auto-kick triggered")
+                    elseif modNotifConfig.Action == "Crash" then
+                        -- Crash client by invoking invalid memory
+                        pcall(function()
+                            local t = {}
+                            while true do table.insert(t, t) end
+                        end)
+                    end
+                    break
+                end
+            end
+        end
+    end
+
+    -- Check on join and every 15s
+    Players.PlayerAdded:Connect(function() task.wait(1); checkForMods() end)
+    task.spawn(function()
+        while task.wait(15) do checkForMods() end
+    end)
+    checkForMods()
+
+    local modBox = Tabs.Misc:AddLeftGroupbox("Mod Notifier")
+    modBox:AddToggle('mn_enabled', {
+        Text    = 'Mod Notifier',
+        Default = modNotifConfig.Enabled,
+        Tooltip = 'Alerts (or acts) when a player from known mod groups joins.',
+        Callback = function(v) modNotifConfig.Enabled = v end
+    })
+    modBox:AddDropdown('mn_action', {
+        Text    = 'Action',
+        Values  = {'Notify', 'Kick', 'Crash'},
+        Default = modNotifConfig.Action,
+        Tooltip = 'What to do when a moderator is detected.',
+        Callback = function(v) modNotifConfig.Action = v end
+    })
+    modBox:AddDropdown('mn_method', {
+        Text    = 'Notify Method',
+        Values  = {'Notification', 'Webhook'},
+        Default = modNotifConfig.Method,
+        Callback = function(v) modNotifConfig.Method = v end
+    })
+
+    local soundBox = Tabs.Misc:AddRightGroupbox("Hit Sounds")
+    soundBox:AddToggle('hs_enabled', {
+        Text = 'Hit Sound Enabled',
+        Default = HitSounds.Enabled,
+        Callback = function(Value) HitSounds.Enabled = Value end
+    })
+    soundBox:AddDropdown('hs_type', {
+        Text = 'Sound Type',
+        Values = {'Call of Duty', 'Bubble', 'Error', 'Lazer', 'Pop'},
+        Default = 'Bubble',
+        Callback = function(Value) HitSounds.Current = Value end
+    })
+
+    -- === UI SETTINGS TAB ===
+    ThemeManager:SetLibrary(Library)
+    SaveManager:SetLibrary(Library)
+
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({'MenuKeybind', 'kb_target_aim', 'kb_aimassist', 'aa_keybind', 'kb_triggerbot', 'kb_tp'})
+
+    ThemeManager:SetFolder('Kodasfps')
+    SaveManager:SetFolder('Kodasfps/Configs')
+
+    ThemeManager:ApplyToTab(Tabs['Settings'])
+    SaveManager:BuildConfigSection(Tabs['Settings'])
+
+    -- ── Keybinds groupbox ───────────────────────────────────────
+    local keybindsGroup = Tabs['Settings']:AddLeftGroupbox('Keybinds')
+
+    -- Menu toggle
+    keybindsGroup:AddToggle('menu_keybind_toggle', {
+        Text = 'Menu Toggle',
+        Default = true,
+        Callback = function(Value) Library:SetVisible(Value) end
+    }):AddKeyPicker('MenuKeybind', {
+        Default = 'RightControl',
+        SyncToggleState = true,
+        Mode = 'Toggle',
+        Text = 'Menu Key',
+    })
+
+    -- Target Aim lock/unlock
+    keybindsGroup:AddToggle('kb_ta_toggle', {
+        Text = 'Target Aim Lock',
+        Default = false,
+        Tooltip = 'Press to lock onto the nearest visible enemy. Press again to unlock.',
+        Callback = function() end
+    }):AddKeyPicker('kb_target_aim', {
+        Default = 'RightShift',
+        SyncToggleState = false,
+        Mode = 'Toggle',
+        Text = 'Target Aim Key',
+        Callback = function()
+            if not TargetAimConfig.Enabled then return end
+            if not TargetAimState.isTargetting then
+                _G._KodaTA_RequestLock = true
+            else
+                _G._KodaTA_RequestLock = 'unlock'
+            end
+        end
+    })
+
+    -- Aim Assist toggle
+    keybindsGroup:AddToggle('kb_aa_toggle', {
+        Text = 'Aim Assist',
+        Default = AimAssistConfig.Enabled,
+        Callback = function(Value) AimAssistConfig.Enabled = Value end
+    }):AddKeyPicker('kb_aimassist', {
+        Default = 'Q',
+        SyncToggleState = true,
+        Mode = 'Toggle',
+        Text = 'Aim Assist Key',
+        Callback = function(Value) AimAssistConfig.Enabled = Value end
+    })
+
+    -- Triggerbot toggle
+    keybindsGroup:AddToggle('kb_tb_toggle', {
+        Text = 'Triggerbot',
+        Default = TriggerbotConfig.Toggle,
+        Callback = function(Value) TriggerbotConfig.Toggle = Value end
+    }):AddKeyPicker('kb_triggerbot', {
+        Default = 'T',
+        SyncToggleState = true,
+        Mode = 'Toggle',
+        Text = 'Triggerbot Key',
+        Callback = function(Value) TriggerbotConfig.Toggle = Value end
+    })
+
+    -- Target Aim Teleport (hold key)
+    keybindsGroup:AddToggle('kb_tp_toggle', {
+        Text = 'TA Teleport (hold)',
+        Default = TargetAimConfig.TeleportEnabled,
+        Callback = function(Value) TargetAimConfig.TeleportEnabled = Value end
+    }):AddKeyPicker('kb_tp', {
+        Default = 'B',
+        SyncToggleState = false,
+        Mode = 'Hold',
+        Text = 'Teleport Key',
+        Callback = function(Value)
+            _G._KodaTA_TpActive = Value
+        end
+    })
+
+    Library.ToggleKeybind = Options.MenuKeybind
+
+    Library:Notify("Kodasfps Loaded! Game: " .. DetectedGame, 4)
+end)
+
+-- Handle script crashing silently in some executors:
+if not pcallSuccess then
+    local errSg = Instance.new("ScreenGui")
+    errSg.Name = "Kodasfps_ErrorLog"
+    errSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    errSg.Parent = game:GetService("CoreGui")
+    
+    local errBg = Instance.new("Frame")
+    errBg.Size = UDim2.new(1, 0, 0, 60)
+    errBg.Position = UDim2.new(0, 0, 0, 0)
+    errBg.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+    errBg.Parent = errSg
+    
+    local errTxt = Instance.new("TextLabel")
+    errTxt.Size = UDim2.new(1, -20, 1, -10)
+    errTxt.Position = UDim2.new(0, 10, 0, 5)
+    errTxt.BackgroundTransparency = 1
+    errTxt.TextScaled = true
+    errTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
+    errTxt.Text = "KODASFPS EXECUTION ERROR: " .. tostring(pcallError)
+    errTxt.TextWrapped = true
+    errTxt.Parent = errBg
+    
+    warn("KodaFPS script execution failed:")
+    warn(tostring(pcallError))
+end
